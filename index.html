@@ -238,7 +238,7 @@ h1,h2,h3,h4{font-family:'Rajdhani',sans-serif;}
   flex:1;overflow-y:auto;overflow-x:hidden;
   background:#f4f7fa;padding:0;
 }
-.wf-body-inner{padding:22px;}
+.wf-body-inner{padding:22px;max-width:100%;overflow-x:hidden;word-break:break-word;}
 .wf-tab-content{display:none;}
 .wf-tab-content.active{display:block;}
 
@@ -309,7 +309,7 @@ h1,h2,h3,h4{font-family:'Rajdhani',sans-serif;}
 .form-field label{font-size:11px;font-weight:600;color:var(--azul);text-transform:uppercase;letter-spacing:0.4px;}
 .form-field input,.form-field select,.form-field textarea{padding:8px 11px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;font-family:'Source Sans 3',sans-serif;color:var(--texto);background:white;transition:border-color 0.18s,box-shadow 0.18s;}
 .form-field input:focus,.form-field select:focus,.form-field textarea:focus{outline:none;border-color:var(--azul-claro);box-shadow:0 0 0 3px rgba(46,109,164,0.1);}
-.form-field textarea{resize:vertical;min-height:72px;text-align:justify;}
+.form-field textarea{resize:vertical;min-height:72px;text-align:justify;word-break:break-word;overflow-wrap:break-word;width:100%;box-sizing:border-box;}
 .field-span-2{grid-column:span 2;}
 .field-span-3{grid-column:span 3;}
 .field-span-4{grid-column:span 4;}
@@ -452,11 +452,24 @@ tbody td{padding:8px 11px;}
 
 /* ── PRINT ───────────────────────────────────────────── */
 @media print{
-  #taskbar,#desktop,.wf-titlebar,.wf-tabs,.wf-footer,.btn-group,.no-print{display:none!important;}
-  .wf-body{overflow:visible!important;}
-  .wf-window{box-shadow:none!important;border-radius:0!important;}
-  body{background:white!important;}
-  p,td{text-align:justify;}
+  @page{size:letter portrait;margin:1.5cm 1.8cm;}
+  #taskbar,#desktop,.wf-titlebar,.wf-tabs,.wf-footer,.btn-group,.no-print,
+  .wf-overlay,.panel-backdrop{display:none!important;}
+  .wf-body{overflow:visible!important;padding:0!important;}
+  .wf-window{box-shadow:none!important;border-radius:0!important;
+    width:100%!important;max-height:none!important;position:static!important;}
+  body{background:white!important;overflow:visible!important;}
+  html{overflow:visible!important;}
+  p,td,li{text-align:justify;}
+  textarea,input{border:none!important;resize:none!important;}
+  .card{box-shadow:none!important;border:1px solid #ddd!important;
+    break-inside:avoid;margin-bottom:8px!important;}
+  .form-field input,.form-field select,.form-field textarea{
+    border:none!important;padding:2px 0!important;}
+  table{width:100%!important;font-size:11pt!important;}
+  th,td{padding:5px 7px!important;}
+  h1,h2,h3,h4{font-family:'Rajdhani',sans-serif;}
+  .sec-titulo{border-bottom:2px solid #c9942a;padding-bottom:3px;margin:10px 0 6px;}
 }
 
 /* ── TOAST ───────────────────────────────────────────── */
@@ -470,6 +483,13 @@ tbody td{padding:8px 11px;}
   .taskbar-app span{display:none;}
 }
 
+
+/* Evitar desbordamiento en formularios */
+.form-grid input,.form-grid select,.form-grid textarea,
+.form-field input,.form-field select,.form-field textarea{
+  max-width:100%;box-sizing:border-box;word-break:break-word;
+}
+.wf-window *{box-sizing:border-box;}
 </style>
 </head>
 <body>
@@ -1415,7 +1435,38 @@ const yy=()=>new Date().getFullYear();
 
 
 function toast(msg,tipo='success'){const d=document.createElement('div');d.className='toast';const bg={success:'#dcfce7',danger:'#fee2e2',warning:'#fef3c7',info:'#dbeafe'};const tc={success:'#166534',danger:'#991b1b',warning:'#92400e',info:'#1e40af'};d.style.cssText=`background:${bg[tipo]||bg.info};color:${tc[tipo]||tc.info};border:1px solid ${tc[tipo]||tc.info};`;d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),4000);}
-function print2(html){const w=window.open('','_blank','width=870,height=740');w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;margin:20px;font-size:13px;}@media print{body{margin:0;}}</style></head><body>${html}window.onload=()=>window.print();<\/script></body></html>`);w.document.close();}
+function print2(html){
+  const w=window.open('','_blank','width=900,height=700');
+  w.document.write(`<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page{size:letter portrait;margin:1.8cm 2cm;}
+  *{box-sizing:border-box;}
+  body{font-family:Arial,sans-serif;font-size:11pt;color:#111;background:white;margin:0;padding:0;}
+  p{text-align:justify;line-height:1.6;margin:4px 0;}
+  td,th{font-size:10pt;}
+  table{width:100%;border-collapse:collapse;table-layout:fixed;word-break:break-word;}
+  td{word-break:break-word;overflow-wrap:break-word;}
+  h4{margin:8px 0 4px;font-family:Arial,sans-serif;}
+  .no-print{display:none;}
+  @media print{
+    body{margin:0!important;}
+    button{display:none!important;}
+  }
+</style>
+</head>
+<body>
+${html}
+<script>
+  window.onload=function(){
+    setTimeout(function(){window.print();},400);
+  };
+<\/script>
+</body></html>`);
+  w.document.close();
+}
 function noData(cols){return`<tr><td colspan="${cols}" style="text-align:center;color:#999;padding:16px;">Sin registros</td></tr>`;}
 
 
@@ -1443,7 +1494,145 @@ function toggleAccion(id){const cb=document.getElementById('ach-'+id);const body
 function addDecomiso(){nDec++;const cats=Object.keys(DECOMISOS);const d=document.createElement('div');d.className='decomiso-item';d.id='dec-'+nDec;d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><strong style="font-size:13px;color:var(--azul);">Decomiso #${nDec}</strong><button class="btn btn-danger btn-sm" onclick="this.closest('.decomiso-item').remove()">✕</button></div><div class="form-grid form-grid-3"><div class="form-field"><label>Categoría</label><select id="dc-cat-${nDec}" onchange="updDecSubcat(${nDec})"><option value="">Seleccionar...</option>${cats.map(c=>`<option>${c}</option>`).join('')}</select></div><div class="form-field"><label>Tipo Específico</label><select id="dc-tipo-${nDec}"><option value="">Primero seleccione categoría</option></select></div><div class="form-field"><label>Subtipo / Marca / Calibre</label><select id="dc-sub-${nDec}"><option value="">—</option></select></div><div class="form-field"><label>Cantidad</label><input type="number" id="dc-cant-${nDec}" min="0" value="1"></div><div class="form-field"><label>Parte Policial Vinculado</label><select id="dc-parte-${nDec}"><option value="">Sin vincular</option>${D.m2.map(p=>`<option value="${p.id}">${p.id}</option>`).join('')}</select></div><div class="form-field"><label>N° Acta de Decomiso</label><input type="text" id="dc-acta-${nDec}" placeholder="N° de acta"></div></div>`;document.getElementById('m1-decomisos-list').appendChild(d);}
 function updDecSubcat(n){const cat=document.getElementById('dc-cat-'+n).value;const tipoSel=document.getElementById('dc-tipo-'+n);const subSel=document.getElementById('dc-sub-'+n);const data=DECOMISOS[cat]||{};const tipos=data.tipos||[];tipoSel.innerHTML='<option value="">Seleccionar...</option>'+tipos.map(t=>`<option>${t}</option>`).join('');subSel.innerHTML='<option value="">—</option>';tipoSel.onchange=()=>{const all=[...(data.marcas||[]),(data.calibres||[]),...(data.presentaciones||[])].filter((v,i,a)=>v&&a.indexOf(v)===i);subSel.innerHTML='<option value="">—</option>'+all.map(x=>`<option>${x}</option>`).join('');};}
 
-function imprimirM1(){const grupo=Array.from(document.querySelectorAll('#m1-grupo input:checked')).map(cb=>cb.value);if(!grupo.length){toast('Seleccione al menos un oficial','warning');return;}const consec=document.getElementById('c-m1').textContent;const cuantItems=CUANT_CAMPOS.map(([l,id])=>{const v=parseInt(document.getElementById(id)?.value)||0;return v>0?`<li><strong>${l}:</strong> ${v}</li>`:null;}).filter(Boolean).join('');const accsItems=ACCIONES.filter(a=>document.getElementById('ach-'+a.id)?.checked).map(a=>{const det=a.campos.map(campo=>{const fid=`acf-${a.id}-${campo.l.replace(/\s/g,'_')}`;const el=document.getElementById(fid);return el&&el.value?`${campo.l}: ${el.value}`:null;}).filter(Boolean).join(', ');return`<li><strong>${a.lbl}</strong>${det?` — ${det}`:''}</li>`;}).join('');const decItems=Array.from(document.querySelectorAll('.decomiso-item')).map(d=>{const n=d.id.replace('dec-','');return`<li>${document.getElementById('dc-cat-'+n)?.value} — ${document.getElementById('dc-tipo-'+n)?.value} (${document.getElementById('dc-cant-'+n)?.value})${document.getElementById('dc-acta-'+n)?.value?` | Acta: ${document.getElementById('dc-acta-'+n).value}`:''}</li>`;}).join('');const docCuantItems=TIPOS_DOC.map(t=>{const v=parseInt(document.getElementById(t.id)?.value)||0;return v>0?`<li><strong>${t.l}:</strong> ${v}</li>`:null;}).filter(Boolean).join('');const firmas=grupo.map(n=>`<div style="display:inline-block;width:44%;margin:24px 2% 8px 2%;text-align:center;"><div style="height:55px;border-bottom:1px solid #333;margin-bottom:6px;"></div><div style="font-size:12px;font-weight:600;">${n}</div><div style="font-size:10px;color:#666;">Oficial de Policía Municipal — Firma</div></div>`).join('');print2(`<div style="max-width:800px;margin:0 auto;"><div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a3a5c;padding-bottom:12px;margin-bottom:14px;"><img src="${I_MUNI}" style="height:70px;"><div style="text-align:center;"><strong>MUNICIPALIDAD DEL CANTÓN CENTRAL DE LIMÓN</strong><br>POLICÍA MUNICIPAL DE LIMÓN<br>Gestión de Seguridad Ciudadana y Vial<br><strong>${consec}</strong></div><img src="${I_PML}" style="height:70px;"></div><h2 style="text-align:center;color:#1a3a5c;margin-bottom:12px;">REPORTE DIARIO DE LABORES</h2><table style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:10px;"><tr><td style="padding:4px;"><strong>Fecha Inicio:</strong> ${document.getElementById('m1-fi')?.value}</td><td style="padding:4px;"><strong>Fecha Fin:</strong> ${document.getElementById('m1-ff')?.value}</td><td style="padding:4px;"><strong>Hora Inicio:</strong> ${document.getElementById('m1-hi')?.value}</td><td style="padding:4px;"><strong>Hora Fin:</strong> ${document.getElementById('m1-hf')?.value}</td></tr><tr><td style="padding:4px;"><strong>Móvil:</strong> ${document.getElementById('m1-movil')?.value}</td><td style="padding:4px;"><strong>Área:</strong> ${document.getElementById('m1-area')?.value}</td><td colspan="2" style="padding:4px;"><strong>Supervisor:</strong> ${document.getElementById('m1-sup')?.value}</td></tr></table><p style="margin-bottom:8px;font-size:12px;"><strong>GRUPO DE TRABAJO:</strong> ${grupo.join(' · ')}</p>${cuantItems?`<p style="margin-bottom:6px;font-size:12px;"><strong>OPERATIVIDAD CUANTITATIVA:</strong></p><ul style="font-size:12px;margin-left:20px;margin-bottom:10px;">${cuantItems}</ul>`:''}${decItems?`<p style="margin-bottom:6px;font-size:12px;"><strong>DECOMISOS REALIZADOS:</strong></p><ul style="font-size:12px;margin-left:20px;margin-bottom:10px;">${decItems}</ul>`:''}${accsItems?`<p style="margin-bottom:6px;font-size:12px;"><strong>TIPOS DE ACCIÓN REALIZADAS:</strong></p><ul style="font-size:12px;margin-left:20px;margin-bottom:10px;">${accsItems}</ul>`:''}${docCuantItems?`<p style="margin-bottom:6px;font-size:12px;"><strong>DOCUMENTOS REALIZADOS:</strong></p><ul style="font-size:12px;margin-left:20px;margin-bottom:10px;">${docCuantItems}</ul><p style="font-size:12px;margin-bottom:8px;"><em>Detalle consecutivos: ${document.getElementById('m1-docs-obs')?.value}</em></p>`:''}${document.getElementById('m1-novedades')?.value?`<p style="margin-bottom:6px;font-size:12px;"><strong>NOVEDADES:</strong></p><p style="font-size:12px;margin-bottom:10px;text-align:justify;line-height:1.7;">${(document.getElementById('m1-novedades').value||'').replace(/\n/g,'<br>')}</p>`:''}  <div style="margin-top:40px;"><strong>FIRMAS DE LOS OFICIALES:</strong><br><br>${firmas}</div><div style="text-align:center;margin-top:20px;font-size:10px;color:#999;border-top:1px solid #ddd;padding-top:8px;">"Limón Ciudad de la Vida" · ${consec}</div></div>`);}
+function imprimirM1(){
+  // Leer valores del formulario activo (DOM)
+  const grupo=Array.from(document.querySelectorAll('#m1-grupo input:checked')).map(cb=>cb.value);
+  const consec=document.getElementById('c-m1').textContent;
+
+  // Cuantitativo: leer directamente de los inputs
+  const cuantItems=CUANT_CAMPOS.map(([l,id])=>{
+    const v=parseInt(document.getElementById(id)?.value)||0;
+    return v>0?`<li style="margin-bottom:3px;"><strong>${l}:</strong> ${v}</li>`:null;
+  }).filter(Boolean).join('');
+
+  // Colaboración (campo separado)
+  const colab=document.getElementById('m1-colab')?.value||'';
+
+  // Acciones
+  const accsItems=ACCIONES.filter(a=>document.getElementById('ach-'+a.id)?.checked).map(a=>{
+    const det=a.campos.map(campo=>{
+      const fid=`acf-${a.id}-${campo.l.replace(/\s/g,'_')}`;
+      const el=document.getElementById(fid);
+      return el&&el.value?`<strong>${campo.l}:</strong> ${el.value}`:null;
+    }).filter(Boolean).join(' | ');
+    return `<li style="margin-bottom:3px;"><strong>${a.lbl}</strong>${det?': '+det:''}</li>`;
+  }).join('');
+
+  // Decomisos
+  const decItems=Array.from(document.querySelectorAll('.decomiso-item')).map(d=>{
+    const n=d.id.replace('dec-','');
+    const cat=document.getElementById('dc-cat-'+n)?.value||'';
+    const tipo=document.getElementById('dc-tipo-'+n)?.value||'';
+    const cant=document.getElementById('dc-cant-'+n)?.value||'1';
+    return cat?`<li style="margin-bottom:3px;"><strong>${cat}</strong>${tipo?' — '+tipo:''}: ${cant}</li>`:null;
+  }).filter(Boolean).join('');
+
+  // Novedades
+  const nov=document.getElementById('m1-novedades')?.value||'';
+
+  // Documentos
+  const docsItems=TIPOS_DOC.map(t=>{
+    const v=parseInt(document.getElementById(t.id)?.value)||0;
+    return v>0?`<strong>${t.l}:</strong> ${v}`:null;
+  }).filter(Boolean).join(' &nbsp;|&nbsp; ');
+
+  // Datos generales
+  const fi=document.getElementById('m1-fi')?.value||'';
+  const ff=document.getElementById('m1-ff')?.value||'';
+  const hi=document.getElementById('m1-hi')?.value||'';
+  const hf=document.getElementById('m1-hf')?.value||'';
+  const movil=document.getElementById('m1-movil')?.value||'';
+  const area=document.getElementById('m1-area')?.value||'';
+  const sup=document.getElementById('m1-sup')?.value||'';
+  const docsObs=document.getElementById('m1-docs-obs')?.value||'';
+
+  if(!grupo.length&&!cuantItems){toast('Complete el formulario antes de imprimir','warning');return;}
+
+  print2(`
+  <div style="max-width:750px;margin:0 auto;font-family:Arial,sans-serif;font-size:11pt;">
+
+    <!-- ENCABEZADO -->
+    <div style="display:flex;justify-content:space-between;align-items:center;
+                border-bottom:2px solid #1a3a5c;padding-bottom:10px;margin-bottom:14px;">
+      <img src="${I_PML}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
+      <div style="text-align:center;flex:1;padding:0 10px;">
+        <div style="font-weight:700;font-size:13pt;color:#1a3a5c;">MUNICIPALIDAD DEL CANTÓN CENTRAL DE LIMÓN</div>
+        <div style="font-size:11pt;">Policía Municipal de Limón</div>
+        <div style="font-weight:700;font-size:12pt;margin-top:4px;">REPORTE DIARIO DE LABORES</div>
+        <div style="font-size:10pt;color:#555;">${consec}</div>
+      </div>
+      <img src="${I_MUNI}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
+    </div>
+
+    <!-- DATOS GENERALES -->
+    <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+      <tr>
+        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>Fecha Inicio:</strong> ${fi}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>Fecha Fin:</strong> ${ff}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>Hora Inicio:</strong> ${hi}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>Hora Fin:</strong> ${hf}</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 6px;border:1px solid #ddd;"><strong>Móvil:</strong> ${movil}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;" colspan="2"><strong>Área:</strong> ${area}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;"><strong>Supervisor:</strong> ${sup}</td>
+      </tr>
+    </table>
+
+    <!-- GRUPO -->
+    ${grupo.length?`
+    <p style="margin:8px 0 4px;"><strong>GRUPO DE TRABAJO:</strong></p>
+    <p style="margin:0 0 10px;">${grupo.join(' &nbsp;|&nbsp; ')}</p>`:''}
+
+    <!-- OPERATIVIDAD CUANTITATIVA -->
+    ${cuantItems?`
+    <p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:3px;">OPERATIVIDAD CUANTITATIVA</p>
+    <ul style="margin:4px 0 10px;padding-left:20px;columns:2;">${cuantItems}</ul>`:''}
+
+    <!-- COLABORACIÓN -->
+    ${colab?`
+    <p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;">COLABORACIÓN A OTROS DEPARTAMENTOS</p>
+    <p style="margin:0 0 10px;text-align:justify;">${colab}</p>`:''}
+
+    <!-- DECOMISOS -->
+    ${decItems?`
+    <p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:3px;">DECOMISOS REALIZADOS</p>
+    <ul style="margin:4px 0 10px;padding-left:20px;">${decItems}</ul>`:''}
+
+    <!-- ACCIONES -->
+    ${accsItems?`
+    <p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:3px;">ACCIONES REALIZADAS</p>
+    <ul style="margin:4px 0 10px;padding-left:20px;">${accsItems}</ul>`:''}
+
+    <!-- DOCUMENTOS -->
+    ${docsItems?`
+    <p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;">DOCUMENTOS REALIZADOS</p>
+    <p style="margin:0 0 4px;">${docsItems}</p>
+    ${docsObs?`<p style="margin:2px 0 10px;font-size:10pt;color:#555;">${docsObs}</p>`:''}
+    `:''}
+
+    <!-- NOVEDADES -->
+    ${nov?`
+    <p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:3px;">NOVEDADES POR RANGO DE HORAS</p>
+    <p style="margin:0 0 14px;text-align:justify;line-height:1.7;word-break:break-word;overflow-wrap:break-word;width:100%;max-width:100%;white-space:pre-wrap;">${nov.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`:''}
+
+    <!-- FIRMAS -->
+    <div style="margin-top:30px;display:flex;flex-wrap:wrap;gap:20px;">
+      ${grupo.map(n=>`
+      <div style="min-width:200px;flex:1;text-align:center;">
+        <div style="height:50px;border-bottom:1px solid #333;margin-bottom:5px;"></div>
+        <div style="font-size:11pt;font-weight:600;">${n}</div>
+        <div style="font-size:9pt;color:#666;">Oficial de Policía Municipal — Firma</div>
+      </div>`).join('')}
+    </div>
+
+    <!-- PIE -->
+    <div style="text-align:center;margin-top:18px;font-size:9pt;color:#999;
+                border-top:1px solid #ddd;padding-top:6px;">
+      "Limón Ciudad de la Vida" · ${consec}
+    </div>
+  </div>`);
+}
 function limpiarM1(){
   // Limpiar TODOS los inputs, selects y textareas del formulario M1
   const contenedor = document.getElementById('m1-nuevo');
@@ -2600,7 +2789,9 @@ async function cargarTodosLosDatos() {
             r[k] = k === 'cuant' ? {} : [];
           }
         }
-        if (!r[k]) r[k] = k === 'cuant' ? {} : [];
+        if (r[k] === null || r[k] === undefined) r[k] = k === 'cuant' ? {} : [];
+        // Garantizar que arrays son realmente arrays
+        if (k !== 'cuant' && !Array.isArray(r[k])) r[k] = [];
       });
       return r;
     });
