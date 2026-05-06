@@ -2742,9 +2742,8 @@ async function cargarTodosLosDatos() {
       gasGet({mod:'consec'}),
     ]);
     D.m1 = m1.map(r => {
-      const cuantObj={};
-      CUANT_CAMPOS.forEach(([l,qid])=>{ cuantObj[l]=parseInt(r[qid])||0; });
-      r.cuant=cuantObj;
+      r.cuant={};
+      CUANT_CAMPOS.forEach(([l,qid])=>{ r.cuant[l]=parseInt(r[qid])||0; });
       ['grupo','acciones','decomisos'].forEach(k=>{
         if(typeof r[k]==='string'){try{r[k]=JSON.parse(r[k]);}catch(e){r[k]=[];}}
         if(!Array.isArray(r[k]))r[k]=[];
@@ -2767,29 +2766,18 @@ async function guardarM1() {
   const grupo=Array.from(document.querySelectorAll('#m1-grupo input:checked')).map(cb=>({n:cb.value,c:cb.dataset.c}));
   if(!grupo.length){toast('Seleccione al menos un oficial','warning');return;}
 
-  // Cuant: objeto local con etiquetas + campos planos q1..q16 para el servidor
-  const cuant={};
-  const cuantPlano={};
-  CUANT_CAMPOS.forEach(([l,qid])=>{
-    const v=parseInt(document.getElementById(qid)?.value)||0;
-    cuant[l]=v;
-    cuantPlano[qid]=v;
-  });
-
   const acciones=ACCIONES.filter(a=>document.getElementById('ach-'+a.id)?.checked).map(a=>{
-    const campos={};
-    a.campos.forEach(c=>{const el=document.getElementById(`acf-${a.id}-${c.l.replace(/\s/g,'_')}`);if(el)campos[c.l]=el.value;});
+    const campos={};a.campos.forEach(c=>{const el=document.getElementById('acf-'+a.id+'-'+c.l.replace(/\s/g,'_'));if(el)campos[c.l]=el.value;});
     return{lbl:a.lbl,campos};
   });
   const decomisos=[];
   document.querySelectorAll('.decomiso-item').forEach(d=>{
     const n=d.id.replace('dec-','');
-    decomisos.push({cat:document.getElementById('dc-cat-'+n)?.value,tipo:document.getElementById('dc-tipo-'+n)?.value,sub:document.getElementById('dc-sub-'+n)?.value,cant:document.getElementById('dc-cant-'+n)?.value,parte:document.getElementById('dc-parte-'+n)?.value,acta:document.getElementById('dc-acta-'+n)?.value});
+    decomisos.push({cat:document.getElementById('dc-cat-'+n)?.value||'',tipo:document.getElementById('dc-tipo-'+n)?.value||'',sub:document.getElementById('dc-sub-'+n)?.value||'',cant:document.getElementById('dc-cant-'+n)?.value||'0'});
   });
 
-  // q1..q16 van como claves DIRECTAS del payload para crear columnas individuales en Sheets
-  const payload={
-    mod:'m1', action:'crear',
+  // Construir payload con q1..q16 como claves directas (números planos)
+  const payload={mod:'m1',action:'crear',
     fi:document.getElementById('m1-fi').value,
     ff:document.getElementById('m1-ff').value,
     hi:document.getElementById('m1-hi').value,
@@ -2804,23 +2792,26 @@ async function guardarM1() {
     grupo:JSON.stringify(grupo),
     acciones:JSON.stringify(acciones),
     decomisos:JSON.stringify(decomisos),
-    u:UA.nombre,
-    ...cuantPlano  // q1:5, q2:3, ... como claves directas
+    u:UA.nombre
   };
+  // Agregar q1..q16 como claves directas al payload
+  CUANT_CAMPOS.forEach(([l,qid])=>{
+    payload[qid]=parseInt(document.getElementById(qid)?.value)||0;
+  });
 
   try {
     const res=await gasPost(payload);
-    // En memoria local, guardar con cuant como objeto etiquetado
-    const r_local={...payload, id:res.id, cuant};
+    // Memoria local: reconstruir cuant con etiquetas
+    const r_local={...payload,id:res.id};
+    r_local.cuant={};
+    CUANT_CAMPOS.forEach(([l,qid])=>{ r_local.cuant[l]=payload[qid]||0; });
     ['grupo','acciones','decomisos'].forEach(k=>{
       if(typeof r_local[k]==='string'){try{r_local[k]=JSON.parse(r_local[k]);}catch(e){r_local[k]=[];}}
     });
     D.m1.unshift(r_local);
     if(res.consec){const el=document.getElementById('c-m1');if(el)el.textContent=res.consec;}
-    renderTabla('m1');
-    toast('✅ Reporte guardado: '+res.id);
-    limpiarM1();
-  } catch(e){toast('❌ '+e.message,'danger');}
+    renderTabla('m1'); toast('Reporte guardado: '+res.id); limpiarM1();
+  } catch(e){toast('Error: '+e.message,'danger');}
 }
 
 // ── GUARDAR M2 ────────────────────────────────────────────────
