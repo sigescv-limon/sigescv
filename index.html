@@ -2514,12 +2514,16 @@ async function gasGet(params = {}) {
 }
 
 async function gasPost(body = {}) {
-  const res  = await fetch(API_URL, {
+  // Content-Type: text/plain evita el preflight CORS
+  // Apps Script acepta JSON en el body con este header
+  const res = await fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(body),
   });
-  const data = await res.json();
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch(e) { throw new Error('Respuesta invalida: ' + text.substring(0,100)); }
   if (data.error) throw new Error(data.error);
   return data;
 }
