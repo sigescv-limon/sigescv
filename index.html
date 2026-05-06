@@ -2592,7 +2592,19 @@ async function cargarTodosLosDatos() {
       gasGet({mod:'auditoria'}),
       gasGet({mod:'consec'}),
     ]);
-    D.m1=m1; D.m2=m2; D.m3a=m3a; D.m3b=m3b;
+    // Normalizar campos JSON que pueden venir como strings desde Google Sheets
+    D.m1 = m1.map(r => {
+      ['cuant','grupo','acciones','decomisos','docsCuant'].forEach(k => {
+        if (typeof r[k] === 'string') {
+          try { r[k] = JSON.parse(r[k]); } catch(e) {
+            r[k] = k === 'cuant' ? {} : [];
+          }
+        }
+        if (!r[k]) r[k] = k === 'cuant' ? {} : [];
+      });
+      return r;
+    });
+    D.m2=m2; D.m3a=m3a; D.m3b=m3b;
     D.m3c=m3c; D.m4=m4; D.m7=m7; D.aud=aud;
     USUARIOS=usrs;
     C={ m1:consecs.m1||1, m2:consecs.m2||1, m3a:consecs.m3a||1, m4:consecs.m4||1, m7:consecs.m7||1 };
