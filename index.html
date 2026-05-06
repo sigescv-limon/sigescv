@@ -452,7 +452,7 @@ tbody td{padding:8px 11px;}
 
 /* ── PRINT ───────────────────────────────────────────── */
 @media print{
-  @page{size:letter portrait;margin:1.5cm 1.8cm;}
+  @page{size:letter portrait;margin:2.5cm 3cm;}
   #taskbar,#desktop,.wf-titlebar,.wf-tabs,.wf-footer,.btn-group,.no-print,
   .wf-overlay,.panel-backdrop{display:none!important;}
   .wf-body{overflow:visible!important;padding:0!important;}
@@ -1442,7 +1442,7 @@ function print2(html){
 <head>
 <meta charset="UTF-8">
 <style>
-  @page{size:letter portrait;margin:1.8cm 2cm;}
+  @page{size:letter portrait;margin:2.5cm 3cm;}
   *{box-sizing:border-box;}
   body{font-family:Arial,sans-serif;font-size:11pt;color:#111;background:white;margin:0;padding:0;}
   p{text-align:justify;line-height:1.6;margin:4px 0;}
@@ -2781,17 +2781,21 @@ async function cargarTodosLosDatos() {
       gasGet({mod:'auditoria'}),
       gasGet({mod:'consec'}),
     ]);
-    // Normalizar campos JSON que pueden venir como strings desde Google Sheets
+    // Normalizar M1: reconstruir cuant desde campos q1..q16
     D.m1 = m1.map(r => {
-      ['cuant','grupo','acciones','decomisos','docsCuant'].forEach(k => {
+      // Reconstruir cuant desde campos individuales q1..q16
+      const cuantObj = {};
+      CUANT_CAMPOS.forEach(([l, qid]) => {
+        const v = parseInt(r[qid]) || 0;
+        cuantObj[l] = v;
+      });
+      r.cuant = cuantObj;
+      // Normalizar arrays JSON
+      ['grupo','acciones','decomisos'].forEach(k => {
         if (typeof r[k] === 'string') {
-          try { r[k] = JSON.parse(r[k]); } catch(e) {
-            r[k] = k === 'cuant' ? {} : [];
-          }
+          try { r[k] = JSON.parse(r[k]); } catch(e) { r[k] = []; }
         }
-        if (r[k] === null || r[k] === undefined) r[k] = k === 'cuant' ? {} : [];
-        // Garantizar que arrays son realmente arrays
-        if (k !== 'cuant' && !Array.isArray(r[k])) r[k] = [];
+        if (!Array.isArray(r[k])) r[k] = [];
       });
       return r;
     });
@@ -2810,8 +2814,14 @@ async function cargarTodosLosDatos() {
 async function guardarM1() {
   const grupo=Array.from(document.querySelectorAll('#m1-grupo input:checked')).map(cb=>({n:cb.value,c:cb.dataset.c}));
   if(!grupo.length){toast('Seleccione al menos un oficial','warning');return;}
+  // Cuant como campos individuales q1..q16 para evitar problemas de encoding
   const cuant={};
-  CUANT_CAMPOS.forEach(([l,qid])=>{cuant[l]=parseInt(document.getElementById(qid)?.value)||0;});
+  const cuantFlat={};
+  CUANT_CAMPOS.forEach(([l,qid])=>{
+    const v=parseInt(document.getElementById(qid)?.value)||0;
+    cuant[l]=v;           // objeto para uso local (impresión, estadísticas)
+    cuantFlat[qid]=v;     // campos planos para enviar al servidor
+  });
   const acciones=ACCIONES.filter(a=>document.getElementById('ach-'+a.id)?.checked).map(a=>{
     const campos={};
     a.campos.forEach(c=>{const el=document.getElementById(`acf-${a.id}-${c.l.replace(/\s/g,'_')}`);if(el)campos[c.l]=el.value;});
@@ -2822,10 +2832,36 @@ async function guardarM1() {
     const n=d.id.replace('dec-','');
     decomisos.push({cat:document.getElementById('dc-cat-'+n)?.value,tipo:document.getElementById('dc-tipo-'+n)?.value,sub:document.getElementById('dc-sub-'+n)?.value,cant:document.getElementById('dc-cant-'+n)?.value,parte:document.getElementById('dc-parte-'+n)?.value,acta:document.getElementById('dc-acta-'+n)?.value});
   });
-  const payload={mod:'m1',action:'crear',fi:document.getElementById('m1-fi').value,ff:document.getElementById('m1-ff').value,hi:document.getElementById('m1-hi').value,hf:document.getElementById('m1-hf').value,movil:document.getElementById('m1-movil').value,placa:document.getElementById('m1-placa')?.value||'',area:document.getElementById('m1-area').value,supervisor:document.getElementById('m1-sup').value,colab:document.getElementById('m1-colab')?.value||'',novedades:document.getElementById('m1-novedades').value,docsObs:document.getElementById('m1-docs-obs').value,grupo,cuant,acciones,decomisos,u:UA.nombre};
+  const payload={
+    mod:'m1',action:'crear',
+    fi:document.getElementById('m1-fi').value,
+    ff:document.getElementById('m1-ff').value,
+    hi:document.getElementById('m1-hi').value,
+    hf:document.getElementById('m1-hf').value,
+    movil:document.getElementById('m1-movil').value,
+    placa:document.getElementById('m1-placa')?.value||'',
+    area:document.getElementById('m1-area').value,
+    supervisor:document.getElementById('m1-sup').value,
+    colab:document.getElementById('m1-colab')?.value||'',
+    novedades:document.getElementById('m1-novedades').value,
+    docsObs:document.getElementById('m1-docs-obs').value,
+    grupo: JSON.stringify(grupo),
+    cuant: JSON.stringify(cuantFlat),  // q1..q16 sin tildes
+    acciones: JSON.stringify(acciones),
+    decomisos: JSON.stringify(decomisos),
+    u:UA.nombre
+  };
   try {
     const res=await gasPost(payload);
-    D.m1.unshift({...payload,id:res.id});
+    // Guardar en memoria con cuant como objeto (no string)
+    const r_local = {...payload, id:res.id};
+    // Restaurar cuant como objeto con etiquetas para uso local
+    r_local.cuant = cuant;
+    // Deserializar los demás campos JSON
+    ['grupo','acciones','decomisos'].forEach(k=>{
+      if(typeof r_local[k]==='string'){try{r_local[k]=JSON.parse(r_local[k]);}catch(e){}}
+    });
+    D.m1.unshift(r_local);
     if(res.consec){const el=document.getElementById('c-m1');if(el)el.textContent=res.consec;}
     renderTabla('m1'); toast('✅ Reporte guardado: '+res.id); limpiarM1();
   } catch(e){toast('❌ '+e.message,'danger');}
