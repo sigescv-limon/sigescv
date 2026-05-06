@@ -1495,82 +1495,85 @@ function addDecomiso(){nDec++;const cats=Object.keys(DECOMISOS);const d=document
 function updDecSubcat(n){const cat=document.getElementById('dc-cat-'+n).value;const tipoSel=document.getElementById('dc-tipo-'+n);const subSel=document.getElementById('dc-sub-'+n);const data=DECOMISOS[cat]||{};const tipos=data.tipos||[];tipoSel.innerHTML='<option value="">Seleccionar...</option>'+tipos.map(t=>`<option>${t}</option>`).join('');subSel.innerHTML='<option value="">—</option>';tipoSel.onchange=()=>{const all=[...(data.marcas||[]),(data.calibres||[]),...(data.presentaciones||[])].filter((v,i,a)=>v&&a.indexOf(v)===i);subSel.innerHTML='<option value="">—</option>'+all.map(x=>`<option>${x}</option>`).join('');};}
 
 function imprimirM1(){
-  // Leer valores del formulario activo (DOM)
-  const grupo=Array.from(document.querySelectorAll('#m1-grupo input:checked')).map(cb=>cb.value);
-  const consec=document.getElementById('c-m1').textContent;
-
-  // Cuantitativo: leer directamente de los inputs
-  const cuantItems=CUANT_CAMPOS.map(([l,id])=>{
-    const v=parseInt(document.getElementById(id)?.value)||0;
-    return v>0?`<li style="margin-bottom:3px;"><strong>${l}:</strong> ${v}</li>`:null;
-  }).filter(Boolean).join('');
-
-  // Colaboración (campo separado)
-  const colab=document.getElementById('m1-colab')?.value||'';
-
-  // Acciones
-  const accsItems=ACCIONES.filter(a=>document.getElementById('ach-'+a.id)?.checked).map(a=>{
-    const det=a.campos.map(campo=>{
-      const fid=`acf-${a.id}-${campo.l.replace(/\s/g,'_')}`;
-      const el=document.getElementById(fid);
-      return el&&el.value?`<strong>${campo.l}:</strong> ${el.value}`:null;
-    }).filter(Boolean).join(' | ');
-    return `<li style="margin-bottom:3px;"><strong>${a.lbl}</strong>${det?': '+det:''}</li>`;
-  }).join('');
-
-  // Decomisos
-  const decItems=Array.from(document.querySelectorAll('.decomiso-item')).map(d=>{
-    const n=d.id.replace('dec-','');
-    const cat=document.getElementById('dc-cat-'+n)?.value||'';
-    const tipo=document.getElementById('dc-tipo-'+n)?.value||'';
-    const cant=document.getElementById('dc-cant-'+n)?.value||'1';
-    return cat?`<li style="margin-bottom:3px;"><strong>${cat}</strong>${tipo?' — '+tipo:''}: ${cant}</li>`:null;
-  }).filter(Boolean).join('');
-
-  // Novedades
-  const nov=document.getElementById('m1-novedades')?.value||'';
-
-  // Documentos
-  const docsItems=TIPOS_DOC.map(t=>{
-    const v=parseInt(document.getElementById(t.id)?.value)||0;
-    return v>0?`<strong>${t.l}:</strong> ${v}`:null;
-  }).filter(Boolean).join(' &nbsp;|&nbsp; ');
+  // Leer del último registro guardado en memoria
+  // Si no hay registros guardados, leer del DOM (formulario activo)
+  let r = D.m1.length ? D.m1[0] : null;
+  const usandoDOM = !r;
 
   // Datos generales
-  const fi=document.getElementById('m1-fi')?.value||'';
-  const ff=document.getElementById('m1-ff')?.value||'';
-  const hi=document.getElementById('m1-hi')?.value||'';
-  const hf=document.getElementById('m1-hf')?.value||'';
-  const movil=document.getElementById('m1-movil')?.value||'';
-  const area=document.getElementById('m1-area')?.value||'';
-  const sup=document.getElementById('m1-sup')?.value||'';
-  const docsObs=document.getElementById('m1-docs-obs')?.value||'';
+  const fi    = r ? (r.fi||'')    : document.getElementById('m1-fi')?.value||'';
+  const ff    = r ? (r.ff||'')    : document.getElementById('m1-ff')?.value||'';
+  const hi    = r ? (r.hi||'')    : document.getElementById('m1-hi')?.value||'';
+  const hf    = r ? (r.hf||'')    : document.getElementById('m1-hf')?.value||'';
+  const movil = r ? (r.movil||'') : document.getElementById('m1-movil')?.value||'';
+  const area  = r ? (r.area||'')  : document.getElementById('m1-area')?.value||'';
+  const sup   = r ? (r.supervisor||'') : document.getElementById('m1-sup')?.value||'';
+  const colab = r ? (r.colab||'') : document.getElementById('m1-colab')?.value||'';
+  const nov   = r ? (r.novedades||'') : document.getElementById('m1-novedades')?.value||'';
+  const docsObs = r ? (r.docsObs||'') : document.getElementById('m1-docs-obs')?.value||'';
+  const consec  = document.getElementById('c-m1')?.textContent||'';
 
-  if(!grupo.length&&!cuantItems){toast('Complete el formulario antes de imprimir','warning');return;}
+  // Grupo
+  let grupo = [];
+  if(r && Array.isArray(r.grupo)){
+    grupo = r.grupo.map(g=>g.n||g);
+  } else {
+    grupo = Array.from(document.querySelectorAll('#m1-grupo input:checked')).map(cb=>cb.value);
+  }
+
+  // Cuant — desde r.cuant (objeto con etiquetas) o del DOM
+  const cuantItems = CUANT_CAMPOS.map(([l,qid])=>{
+    const v = r ? (parseInt(r.cuant?.[l])||0) : (parseInt(document.getElementById(qid)?.value)||0);
+    return v>0 ? `<li style="margin-bottom:3px;"><strong>${l}:</strong> ${v}</li>` : null;
+  }).filter(Boolean).join('');
+
+  // Decomisos
+  let decItems = '';
+  if(r && Array.isArray(r.decomisos)){
+    decItems = r.decomisos.filter(d=>d.cat).map(d=>
+      `<li style="margin-bottom:3px;"><strong>${d.cat}</strong>${d.tipo?' — '+d.tipo:''}: ${d.cant||1}</li>`
+    ).join('');
+  } else {
+    decItems = Array.from(document.querySelectorAll('.decomiso-item')).map(d=>{
+      const n=d.id.replace('dec-','');
+      const cat=document.getElementById('dc-cat-'+n)?.value||'';
+      const tipo=document.getElementById('dc-tipo-'+n)?.value||'';
+      const cant=document.getElementById('dc-cant-'+n)?.value||'1';
+      return cat?`<li style="margin-bottom:3px;"><strong>${cat}</strong>${tipo?' — '+tipo:''}: ${cant}</li>`:null;
+    }).filter(Boolean).join('');
+  }
+
+  // Acciones
+  let accsItems = '';
+  if(r && Array.isArray(r.acciones)){
+    accsItems = r.acciones.map(a=>`<li style="margin-bottom:3px;"><strong>${a.lbl}</strong></li>`).join('');
+  } else {
+    accsItems = ACCIONES.filter(a=>document.getElementById('ach-'+a.id)?.checked)
+      .map(a=>`<li style="margin-bottom:3px;"><strong>${a.lbl}</strong></li>`).join('');
+  }
+
+  if(!grupo.length && !cuantItems){
+    toast('No hay datos para imprimir','warning');return;
+  }
 
   print2(`
-  <div style="max-width:750px;margin:0 auto;font-family:Arial,sans-serif;font-size:11pt;">
-
-    <!-- ENCABEZADO -->
-    <div style="display:flex;justify-content:space-between;align-items:center;
-                border-bottom:2px solid #1a3a5c;padding-bottom:10px;margin-bottom:14px;">
+  <div style="max-width:100%;font-family:Arial,sans-serif;font-size:11pt;">
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a3a5c;padding-bottom:10px;margin-bottom:14px;">
       <img src="${I_PML}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
       <div style="text-align:center;flex:1;padding:0 10px;">
         <div style="font-weight:700;font-size:13pt;color:#1a3a5c;">MUNICIPALIDAD DEL CANTÓN CENTRAL DE LIMÓN</div>
-        <div style="font-size:11pt;">Policía Municipal de Limón</div>
+        <div>Policía Municipal de Limón</div>
         <div style="font-weight:700;font-size:12pt;margin-top:4px;">REPORTE DIARIO DE LABORES</div>
         <div style="font-size:10pt;color:#555;">${consec}</div>
       </div>
       <img src="${I_MUNI}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
     </div>
-
-    <!-- DATOS GENERALES -->
     <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
       <tr>
-        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>Fecha Inicio:</strong> ${fi}</td>
-        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>Fecha Fin:</strong> ${ff}</td>
-        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>Hora Inicio:</strong> ${hi}</td>
-        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>Hora Fin:</strong> ${hf}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>F. Inicio:</strong> ${fi}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>F. Fin:</strong> ${ff}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>H. Inicio:</strong> ${hi}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>H. Fin:</strong> ${hf}</td>
       </tr>
       <tr>
         <td style="padding:4px 6px;border:1px solid #ddd;"><strong>Móvil:</strong> ${movil}</td>
@@ -1578,59 +1581,16 @@ function imprimirM1(){
         <td style="padding:4px 6px;border:1px solid #ddd;"><strong>Supervisor:</strong> ${sup}</td>
       </tr>
     </table>
-
-    <!-- GRUPO -->
-    ${grupo.length?`
-    <p style="margin:8px 0 4px;"><strong>GRUPO DE TRABAJO:</strong></p>
-    <p style="margin:0 0 10px;">${grupo.join(' &nbsp;|&nbsp; ')}</p>`:''}
-
-    <!-- OPERATIVIDAD CUANTITATIVA -->
-    ${cuantItems?`
-    <p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:3px;">OPERATIVIDAD CUANTITATIVA</p>
-    <ul style="margin:4px 0 10px;padding-left:20px;columns:2;">${cuantItems}</ul>`:''}
-
-    <!-- COLABORACIÓN -->
-    ${colab?`
-    <p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;">COLABORACIÓN A OTROS DEPARTAMENTOS</p>
-    <p style="margin:0 0 10px;text-align:justify;">${colab}</p>`:''}
-
-    <!-- DECOMISOS -->
-    ${decItems?`
-    <p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:3px;">DECOMISOS REALIZADOS</p>
-    <ul style="margin:4px 0 10px;padding-left:20px;">${decItems}</ul>`:''}
-
-    <!-- ACCIONES -->
-    ${accsItems?`
-    <p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:3px;">ACCIONES REALIZADAS</p>
-    <ul style="margin:4px 0 10px;padding-left:20px;">${accsItems}</ul>`:''}
-
-    <!-- DOCUMENTOS -->
-    ${docsItems?`
-    <p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;">DOCUMENTOS REALIZADOS</p>
-    <p style="margin:0 0 4px;">${docsItems}</p>
-    ${docsObs?`<p style="margin:2px 0 10px;font-size:10pt;color:#555;">${docsObs}</p>`:''}
-    `:''}
-
-    <!-- NOVEDADES -->
-    ${nov?`
-    <p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:3px;">NOVEDADES POR RANGO DE HORAS</p>
-    <p style="margin:0 0 14px;text-align:justify;line-height:1.7;word-break:break-word;overflow-wrap:break-word;width:100%;max-width:100%;white-space:pre-wrap;">${nov.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`:''}
-
-    <!-- FIRMAS -->
+    ${grupo.length?`<p style="margin:6px 0 4px;"><strong>GRUPO DE TRABAJO:</strong></p><p style="margin:0 0 10px;">${grupo.join(' &nbsp;|&nbsp; ')}</p>`:''}
+    ${cuantItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">OPERATIVIDAD CUANTITATIVA</p><ul style="margin:4px 0 10px;padding-left:20px;columns:2;-webkit-columns:2;">${cuantItems}</ul>`:''}
+    ${colab?`<p style="margin:6px 0 2px;"><strong>COLABORACIÓN A OTROS DEPARTAMENTOS</strong></p><p style="margin:0 0 8px;text-align:justify;">${colab}</p>`:''}
+    ${decItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">DECOMISOS REALIZADOS</p><ul style="margin:4px 0 10px;padding-left:20px;">${decItems}</ul>`:''}
+    ${accsItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">ACCIONES REALIZADAS</p><ul style="margin:4px 0 10px;padding-left:20px;">${accsItems}</ul>`:''}
+    ${nov?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">NOVEDADES POR RANGO DE HORAS</p><p style="margin:0 0 14px;text-align:justify;line-height:1.7;white-space:pre-wrap;word-break:break-word;">${nov.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`:''}
     <div style="margin-top:30px;display:flex;flex-wrap:wrap;gap:20px;">
-      ${grupo.map(n=>`
-      <div style="min-width:200px;flex:1;text-align:center;">
-        <div style="height:50px;border-bottom:1px solid #333;margin-bottom:5px;"></div>
-        <div style="font-size:11pt;font-weight:600;">${n}</div>
-        <div style="font-size:9pt;color:#666;">Oficial de Policía Municipal — Firma</div>
-      </div>`).join('')}
+      ${grupo.map(n=>`<div style="min-width:180px;flex:1;text-align:center;"><div style="height:50px;border-bottom:1px solid #333;margin-bottom:5px;"></div><div style="font-size:11pt;font-weight:600;">${n}</div><div style="font-size:9pt;color:#666;">Oficial de Policía Municipal</div></div>`).join('')}
     </div>
-
-    <!-- PIE -->
-    <div style="text-align:center;margin-top:18px;font-size:9pt;color:#999;
-                border-top:1px solid #ddd;padding-top:6px;">
-      "Limón Ciudad de la Vida" · ${consec}
-    </div>
+    <div style="text-align:center;margin-top:18px;font-size:9pt;color:#999;border-top:1px solid #ddd;padding-top:6px;">"Limón Ciudad de la Vida" · ${consec}</div>
   </div>`);
 }
 function limpiarM1(){
@@ -2781,21 +2741,13 @@ async function cargarTodosLosDatos() {
       gasGet({mod:'auditoria'}),
       gasGet({mod:'consec'}),
     ]);
-    // Normalizar M1: reconstruir cuant desde campos q1..q16
     D.m1 = m1.map(r => {
-      // Reconstruir cuant desde campos individuales q1..q16
-      const cuantObj = {};
-      CUANT_CAMPOS.forEach(([l, qid]) => {
-        const v = parseInt(r[qid]) || 0;
-        cuantObj[l] = v;
-      });
-      r.cuant = cuantObj;
-      // Normalizar arrays JSON
-      ['grupo','acciones','decomisos'].forEach(k => {
-        if (typeof r[k] === 'string') {
-          try { r[k] = JSON.parse(r[k]); } catch(e) { r[k] = []; }
-        }
-        if (!Array.isArray(r[k])) r[k] = [];
+      const cuantObj={};
+      CUANT_CAMPOS.forEach(([l,qid])=>{ cuantObj[l]=parseInt(r[qid])||0; });
+      r.cuant=cuantObj;
+      ['grupo','acciones','decomisos'].forEach(k=>{
+        if(typeof r[k]==='string'){try{r[k]=JSON.parse(r[k]);}catch(e){r[k]=[];}}
+        if(!Array.isArray(r[k]))r[k]=[];
       });
       return r;
     });
@@ -2814,14 +2766,16 @@ async function cargarTodosLosDatos() {
 async function guardarM1() {
   const grupo=Array.from(document.querySelectorAll('#m1-grupo input:checked')).map(cb=>({n:cb.value,c:cb.dataset.c}));
   if(!grupo.length){toast('Seleccione al menos un oficial','warning');return;}
-  // Cuant como campos individuales q1..q16 para evitar problemas de encoding
+
+  // Cuant: objeto local con etiquetas + campos planos q1..q16 para el servidor
   const cuant={};
-  const cuantFlat={};
+  const cuantPlano={};
   CUANT_CAMPOS.forEach(([l,qid])=>{
     const v=parseInt(document.getElementById(qid)?.value)||0;
-    cuant[l]=v;           // objeto para uso local (impresión, estadísticas)
-    cuantFlat[qid]=v;     // campos planos para enviar al servidor
+    cuant[l]=v;
+    cuantPlano[qid]=v;
   });
+
   const acciones=ACCIONES.filter(a=>document.getElementById('ach-'+a.id)?.checked).map(a=>{
     const campos={};
     a.campos.forEach(c=>{const el=document.getElementById(`acf-${a.id}-${c.l.replace(/\s/g,'_')}`);if(el)campos[c.l]=el.value;});
@@ -2832,8 +2786,10 @@ async function guardarM1() {
     const n=d.id.replace('dec-','');
     decomisos.push({cat:document.getElementById('dc-cat-'+n)?.value,tipo:document.getElementById('dc-tipo-'+n)?.value,sub:document.getElementById('dc-sub-'+n)?.value,cant:document.getElementById('dc-cant-'+n)?.value,parte:document.getElementById('dc-parte-'+n)?.value,acta:document.getElementById('dc-acta-'+n)?.value});
   });
+
+  // q1..q16 van como claves DIRECTAS del payload para crear columnas individuales en Sheets
   const payload={
-    mod:'m1',action:'crear',
+    mod:'m1', action:'crear',
     fi:document.getElementById('m1-fi').value,
     ff:document.getElementById('m1-ff').value,
     hi:document.getElementById('m1-hi').value,
@@ -2845,25 +2801,25 @@ async function guardarM1() {
     colab:document.getElementById('m1-colab')?.value||'',
     novedades:document.getElementById('m1-novedades').value,
     docsObs:document.getElementById('m1-docs-obs').value,
-    grupo: JSON.stringify(grupo),
-    cuant: JSON.stringify(cuantFlat),  // q1..q16 sin tildes
-    acciones: JSON.stringify(acciones),
-    decomisos: JSON.stringify(decomisos),
-    u:UA.nombre
+    grupo:JSON.stringify(grupo),
+    acciones:JSON.stringify(acciones),
+    decomisos:JSON.stringify(decomisos),
+    u:UA.nombre,
+    ...cuantPlano  // q1:5, q2:3, ... como claves directas
   };
+
   try {
     const res=await gasPost(payload);
-    // Guardar en memoria con cuant como objeto (no string)
-    const r_local = {...payload, id:res.id};
-    // Restaurar cuant como objeto con etiquetas para uso local
-    r_local.cuant = cuant;
-    // Deserializar los demás campos JSON
+    // En memoria local, guardar con cuant como objeto etiquetado
+    const r_local={...payload, id:res.id, cuant};
     ['grupo','acciones','decomisos'].forEach(k=>{
-      if(typeof r_local[k]==='string'){try{r_local[k]=JSON.parse(r_local[k]);}catch(e){}}
+      if(typeof r_local[k]==='string'){try{r_local[k]=JSON.parse(r_local[k]);}catch(e){r_local[k]=[];}}
     });
     D.m1.unshift(r_local);
     if(res.consec){const el=document.getElementById('c-m1');if(el)el.textContent=res.consec;}
-    renderTabla('m1'); toast('✅ Reporte guardado: '+res.id); limpiarM1();
+    renderTabla('m1');
+    toast('✅ Reporte guardado: '+res.id);
+    limpiarM1();
   } catch(e){toast('❌ '+e.message,'danger');}
 }
 
