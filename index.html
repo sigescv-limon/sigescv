@@ -2534,8 +2534,12 @@ async function login() {
   const p = document.getElementById('lp').value.trim();
   if (!u || !p) { document.getElementById('login-error').style.display='block'; return; }
   try {
-    const res = await gasPost({ mod:'auth', action:'login', usuario:u, password:p });
-    UA = res.user;
+    // Login por GET para evitar bloqueos CORS
+    const url = API_URL + '?mod=auth&action=login&usuario=' + encodeURIComponent(u) + '&password=' + encodeURIComponent(p);
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.ok || data.error) throw new Error(data.error || 'Error de autenticacion');
+    UA = data.user;
     document.getElementById('login-error').style.display='none';
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='block';
@@ -2543,6 +2547,7 @@ async function login() {
     await cargarTodosLosDatos();
   } catch(e) {
     document.getElementById('login-error').style.display='block';
+    console.error('Login error:', e.message);
   }
 }
 
