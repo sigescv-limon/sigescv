@@ -839,10 +839,20 @@ tbody td{padding:8px 11px;}
              onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
     </div>
     <div class="ap-body" id="ap-body-ap13" style="display:none;">
+      <div class="accion-policial" id="ap-item-ap13">
+    <div class="ap-header" onclick="toggleAP('ap13')">
+      <input type="checkbox" id="ap-cb-ap13" onchange="toggleAP('ap13')">
+      <span class="ap-label">COLABORACIÓN A OTROS DEPARTAMENTOS</span>
+      <input type="number" id="ap-cnt-ap13" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap13" style="display:none;">
       <div class="form-field">
         <label>Detalle de la colaboración</label>
         <textarea id="m1-colab" rows="2" placeholder="Detalle las colaboraciones realizadas..."></textarea>
       </div>
+    </div>
+  </div>
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap14">
@@ -2201,10 +2211,8 @@ function addDecomiso(){nDec++;const cats=Object.keys(DECOMISOS);const d=document
 function updDecSubcat(n){const cat=document.getElementById('dc-cat-'+n).value;const tipoSel=document.getElementById('dc-tipo-'+n);const subSel=document.getElementById('dc-sub-'+n);const data=DECOMISOS[cat]||{};const tipos=data.tipos||[];tipoSel.innerHTML='<option value="">Seleccionar...</option>'+tipos.map(t=>`<option>${t}</option>`).join('');subSel.innerHTML='<option value="">—</option>';tipoSel.onchange=()=>{const all=[...(data.marcas||[]),(data.calibres||[]),...(data.presentaciones||[])].filter((v,i,a)=>v&&a.indexOf(v)===i);subSel.innerHTML='<option value="">—</option>'+all.map(x=>`<option>${x}</option>`).join('');};}
 
 function imprimirM1(){
-  // Leer del DOM (formulario activo) primero
-  // Si el formulario está vacío, usar el último registro guardado
-  const _tieneGrupoActivo = document.querySelectorAll('#m1-grupo input:checked').length > 0;
-  const r = _tieneGrupoActivo ? null : (D.m1.length ? D.m1[0] : null);
+  const _tieneGrupo = document.querySelectorAll('#m1-grupo input:checked').length > 0;
+  const r = _tieneGrupo ? null : (D.m1.length ? D.m1[0] : null);
   const fi    = r?.fi    || document.getElementById('m1-fi')?.value||'';
   const ff    = r?.ff    || document.getElementById('m1-ff')?.value||'';
   const hi    = r?.hi    || document.getElementById('m1-hi')?.value||'';
@@ -3387,15 +3395,11 @@ async function login() {
     document.getElementById('login-error').style.display='none';
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='block';
-    try { setupUI(); } catch(err) { console.error('setupUI error:', err); }
+    setupUI();
     await cargarTodosLosDatos();
   } catch(e) {
-    const errEl = document.getElementById('login-error');
-    if(errEl) {
-      errEl.style.display='block';
-      errEl.textContent = e.message || 'Error de autenticación';
-    }
-    console.error('Login error:', e.message, e.stack);
+    document.getElementById('login-error').style.display='block';
+    console.error('Login error:', e.message);
   }
 }
 
@@ -3441,10 +3445,8 @@ async function cargarTodosLosDatos() {
       gasGet({mod:'consec'}),
     ]);
     D.m1 = m1.map(r => {
-      // Reconstruir cuant desde ap1..ap33
       r.cuant={};
       AP_CAMPOS.forEach(([apId,lbl])=>{ r.cuant[lbl]=parseInt(r[apId])||0; });
-      // Reconstruir docs desde td1..td10
       r.docs={};
       TIPOS_DOC.forEach(t=>{ r.docs[t.l]=parseInt(r[t.id])||0; });
       ['grupo','acciones','decomisos'].forEach(k=>{
@@ -3461,7 +3463,7 @@ async function cargarTodosLosDatos() {
     D.m7hist[histAnio]=await gasGet({mod:'m7',action:'historico',anio:histAnio}).catch(()=>({}));
     updConsec(); renderAll();
     toast('✅ Sistema listo');
-  } catch(e) { console.error('cargarDatos error:', e.message, e.stack); toast('❌ Error: '+e.message,'danger'); }
+  } catch(e) { toast('❌ Error cargando datos: '+e.message,'danger'); }
 }
 
 // ── GUARDAR M1 ────────────────────────────────────────────────
@@ -3521,6 +3523,8 @@ async function guardarM1() {
     const res=await gasPost(payload);
     const r_local={...payload, id:res.id};
     r_local.cuant={};
+    r_local.docs={};
+    TIPOS_DOC.forEach(t=>{ r_local.docs[t.l]=docsPlano[t.id]||0; });
     r_local.docs={};
     TIPOS_DOC.forEach(t=>{ r_local.docs[t.l]=docsPlano[t.id]||0; });
     AP_CAMPOS.forEach(([apId,lbl])=>{ r_local.cuant[lbl]=apPlano[apId]||0; });
@@ -3701,8 +3705,4 @@ async function guardarPermisos() {
 
 // ── RESET / BACKUP ────────────────────────────────────────────
 async function ejecutarEliminacion() {
-  if(document.getElementById('confirm-input').value.trim()!=='CONFIRMAR'){toast('Debe escribir CONFIRMAR','danger');return;}
-  if(!pendingDel)return;
-  try {
-    if(pendingDel.tipo==='total-reset'||pendingDel.tipo==='todo'){
-      await gasPost({mod:'reset
+  if(document.getElementById('confi
