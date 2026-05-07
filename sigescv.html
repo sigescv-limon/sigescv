@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="version" content="2.1-202605070530">
 <title>SIGESCV v2.0 — Policía Municipal de Limón</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -452,7 +453,7 @@ tbody td{padding:8px 11px;}
 
 /* ── PRINT ───────────────────────────────────────────── */
 @media print{
-  @page{size:letter portrait;margin:1.5cm 1.8cm;}
+  @page{size:letter portrait;margin:2.5cm 3cm;}
   #taskbar,#desktop,.wf-titlebar,.wf-tabs,.wf-footer,.btn-group,.no-print,
   .wf-overlay,.panel-backdrop{display:none!important;}
   .wf-body{overflow:visible!important;padding:0!important;}
@@ -678,16 +679,461 @@ tbody td{padding:8px 11px;}
      <div class="sec-titulo">👮 Grupo de Trabajo</div>
      <div class="alert alert-info">Seleccione los oficiales que integraron el grupo.</div>
      <div id="m1-grupo" class="form-grid form-grid-3" style="margin-bottom:14px;"></div>
-     <div class="sec-titulo">📊 Operatividad Cuantitativa</div>
-     <div class="form-grid form-grid-4" id="m1-cuant"></div>
-     <div class="form-grid form-grid-2" style="margin-top:10px;">
-      <div class="form-field"><label>Colaboración a Otros Departamentos</label><textarea id="m1-colab" rows="2" placeholder="Detalle colaboraciones..."></textarea></div>
-     </div>
-     <div class="sec-titulo">🔒 Decomisos Realizados</div>
-     <div id="m1-decomisos-list"></div>
-     <button class="btn btn-secondary btn-sm" onclick="addDecomiso()" style="margin-bottom:12px;">+ Agregar Decomiso</button>
-     <div class="sec-titulo">✅ Tipos de Acción Realizadas</div>
-     <div id="m1-acciones"></div>
+     
+<!-- ══ ACCIONES POLICIALES REALIZADAS ══════════════════════ -->
+<div class="sec-titulo">⚡ ACCIONES POLICIALES REALIZADAS</div>
+<div id="m1-acciones-policiales">
+
+  <div class="accion-policial" id="ap-item-ap1">
+    <div class="ap-header" onclick="toggleAP('ap1')">
+      <input type="checkbox" id="ap-cb-ap1" onchange="toggleAP('ap1')">
+      <span class="ap-label">CONTROL DE CARRETERA</span>
+      <input type="number" id="ap-cnt-ap1" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap1" style="display:none;">
+      <div class="form-grid form-grid-2">
+        <div class="form-field"><label>Lugares</label>
+          <input type="text" id="ap1-lugares" placeholder="Lugares intervenidos">
+        </div>
+        <div class="form-field"><label>Noticia Criminis</label>
+          <input type="number" id="ap1-nc" min="0" value="0">
+        </div>
+        <div class="form-field"><label>Colaboran otras policías</label>
+          <select id="ap1-colab" onchange="document.getElementById('ap1-colab-det').style.display=this.value?'block':'none'">
+            <option value="">Seleccionar...</option>
+            <option value="si">Sí</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div class="form-field" id="ap1-colab-det" style="display:none;">
+          <label id="ap1-colab-lbl">Detalle</label>
+          <input type="text" id="ap1-colab-txt" placeholder="Indique cuáles policías/unidades">
+        </div>
+        <div class="form-field field-span-2"><label>Observaciones</label>
+          <textarea id="ap1-obs" rows="2" placeholder="Observaciones del control..."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap2">
+    <div class="ap-header" onclick="toggleAP('ap2')">
+      <input type="checkbox" id="ap-cb-ap2" onchange="toggleAP('ap2')">
+      <span class="ap-label">PERSONAS ABORDADAS</span>
+      <input type="number" id="ap-cnt-ap2" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap3">
+    <div class="ap-header" onclick="toggleAP('ap3')">
+      <input type="checkbox" id="ap-cb-ap3" onchange="toggleAP('ap3')">
+      <span class="ap-label">PERSONAS INVESTIGADAS ECU-OIJ</span>
+      <input type="number" id="ap-cnt-ap3" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap3" style="display:none;">
+      <div class="form-field"><label>Observaciones</label>
+        <textarea id="ap-obs-ap3" rows="2" placeholder="Observaciones..."></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap4">
+    <div class="ap-header" onclick="toggleAP('ap4')">
+      <input type="checkbox" id="ap-cb-ap4" onchange="toggleAP('ap4')">
+      <span class="ap-label">VEHÍCULOS ABORDADOS</span>
+      <input type="number" id="ap-cnt-ap4" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap5">
+    <div class="ap-header" onclick="toggleAP('ap5')">
+      <input type="checkbox" id="ap-cb-ap5" onchange="toggleAP('ap5')">
+      <span class="ap-label">VEHÍCULOS INVESTIGADOS ECU-OIJ</span>
+      <input type="number" id="ap-cnt-ap5" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap5" style="display:none;">
+      <div class="form-field"><label>Observaciones</label>
+        <textarea id="ap-obs-ap5" rows="2" placeholder="Observaciones..."></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap6">
+    <div class="ap-header" onclick="toggleAP('ap6')">
+      <input type="checkbox" id="ap-cb-ap6" onchange="toggleAP('ap6')">
+      <span class="ap-label">MOTOCICLETAS ABORDADAS</span>
+      <input type="number" id="ap-cnt-ap6" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap7">
+    <div class="ap-header" onclick="toggleAP('ap7')">
+      <input type="checkbox" id="ap-cb-ap7" onchange="toggleAP('ap7')">
+      <span class="ap-label">MOTOCICLETAS INVESTIGADAS ECU-OIJ</span>
+      <input type="number" id="ap-cnt-ap7" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap8">
+    <div class="ap-header" onclick="toggleAP('ap8')">
+      <input type="checkbox" id="ap-cb-ap8" onchange="toggleAP('ap8')">
+      <span class="ap-label">PERSONAS DETENIDAS</span>
+      <span class="ap-cnt-auto" id="ap-cnt-ap8" style="background:#e8eef4;padding:2px 10px;border-radius:5px;font-size:12px;font-weight:700;min-width:40px;text-align:center;">0</span>
+    </div>
+    <div class="ap-body" id="ap-body-ap8" style="display:none;">
+      <div id="ap8-list"></div>
+      <button class="btn btn-secondary btn-sm" onclick="addDetalle('ap8','detenido')">+ Agregar Detenido</button>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap9">
+    <div class="ap-header" onclick="toggleAP('ap9')">
+      <input type="checkbox" id="ap-cb-ap9" onchange="toggleAP('ap9')">
+      <span class="ap-label">CAPTURAS PENALES</span>
+      <span class="ap-cnt-auto" id="ap-cnt-ap9" style="background:#e8eef4;padding:2px 10px;border-radius:5px;font-size:12px;font-weight:700;min-width:40px;text-align:center;">0</span>
+    </div>
+    <div class="ap-body" id="ap-body-ap9" style="display:none;">
+      <div id="ap9-list"></div>
+      <button class="btn btn-secondary btn-sm" onclick="addDetalle('ap9','captura_penal')">+ Agregar Captura</button>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap10">
+    <div class="ap-header" onclick="toggleAP('ap10')">
+      <input type="checkbox" id="ap-cb-ap10" onchange="toggleAP('ap10')">
+      <span class="ap-label">CAPTURAS POR PENSIÓN ALIMENTARIA</span>
+      <span class="ap-cnt-auto" id="ap-cnt-ap10" style="background:#e8eef4;padding:2px 10px;border-radius:5px;font-size:12px;font-weight:700;min-width:40px;text-align:center;">0</span>
+    </div>
+    <div class="ap-body" id="ap-body-ap10" style="display:none;">
+      <div id="ap10-list"></div>
+      <button class="btn btn-secondary btn-sm" onclick="addDetalle('ap10','captura_pension')">+ Agregar Captura</button>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap11">
+    <div class="ap-header" onclick="toggleAP('ap11')">
+      <input type="checkbox" id="ap-cb-ap11" onchange="toggleAP('ap11')">
+      <span class="ap-label">ÓRDENES DE PRESENTACIÓN</span>
+      <span class="ap-cnt-auto" id="ap-cnt-ap11" style="background:#e8eef4;padding:2px 10px;border-radius:5px;font-size:12px;font-weight:700;min-width:40px;text-align:center;">0</span>
+    </div>
+    <div class="ap-body" id="ap-body-ap11" style="display:none;">
+      <div id="ap11-list"></div>
+      <button class="btn btn-secondary btn-sm" onclick="addDetalle('ap11','orden')">+ Agregar Orden</button>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap12">
+    <div class="ap-header" onclick="toggleAP('ap12')">
+      <input type="checkbox" id="ap-cb-ap12" onchange="toggleAP('ap12')">
+      <span class="ap-label">PERSONAS RESEÑADAS</span>
+      <input type="number" id="ap-cnt-ap12" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap12" style="display:none;">
+      <div class="form-field"><label>Motivo</label>
+        <textarea id="ap-obs-ap12" rows="2" placeholder="Motivo..."></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="form-field" style="margin:10px 0;">
+    <label style="font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;color:var(--azul);text-transform:uppercase;">COLABORACIÓN A OTROS DEPARTAMENTOS</label>
+    <textarea id="m1-colab" rows="2" placeholder="Detalle las colaboraciones realizadas..."></textarea>
+  </div>
+  <div class="accion-policial" id="ap-item-ap14">
+    <div class="ap-header" onclick="toggleAP('ap14')">
+      <input type="checkbox" id="ap-cb-ap14" onchange="toggleAP('ap14')">
+      <span class="ap-label">INTERVENCIÓN DE VENTAS AMBULANTES</span>
+      <span class="ap-cnt-auto" id="ap-cnt-ap14" style="background:#e8eef4;padding:2px 10px;border-radius:5px;font-size:12px;font-weight:700;min-width:40px;text-align:center;">0</span>
+    </div>
+    <div class="ap-body" id="ap-body-ap14" style="display:none;">
+      <div class="alert alert-warning" style="font-size:12px;">⚠️ Cada intervención debe incluir sector y hora.</div>
+      <div id="ap14-list"></div>
+      <button class="btn btn-secondary btn-sm" onclick="addDetalle('ap14','venta_ambulante')">+ Agregar Intervención</button>
+    </div>
+  </div>
+<div class="sec-titulo" style="margin-top:16px;">🔵 TIPOS DE ACCIONES REALIZADAS</div>
+  <div class="accion-policial" id="ap-item-ap15">
+    <div class="ap-header" onclick="toggleAP('ap15')">
+      <input type="checkbox" id="ap-cb-ap15" onchange="toggleAP('ap15')">
+      <span class="ap-label">RECUPERACIÓN DE VEHÍCULO ROBADO</span>
+      <input type="number" id="ap-cnt-ap15" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap15" style="display:none;">
+      <div class="form-grid form-grid-2">
+        <div class="form-field"><label>Placas</label><input type="text" id="ap15-placas" placeholder="Número de placas"></div>
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap16">
+    <div class="ap-header" onclick="toggleAP('ap16')">
+      <input type="checkbox" id="ap-cb-ap16" onchange="toggleAP('ap16')">
+      <span class="ap-label">COLISIÓN SIN HERIDOS</span>
+      <input type="number" id="ap-cnt-ap16" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap16" style="display:none;">
+      <div class="form-field"><label>Vehículos involucrados</label><input type="number" id="ap16-veh" min="0" value="0"></div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap17">
+    <div class="ap-header" onclick="toggleAP('ap17')">
+      <input type="checkbox" id="ap-cb-ap17" onchange="toggleAP('ap17')">
+      <span class="ap-label">COLISIÓN CON HERIDOS Y/O FALLECIDOS</span>
+      <input type="number" id="ap-cnt-ap17" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap17" style="display:none;">
+      <div class="form-grid form-grid-2">
+        <div class="form-field"><label>Heridos</label><input type="number" id="ap17-her" min="0" value="0"></div>
+        <div class="form-field"><label>Fallecidos</label><input type="number" id="ap17-fall" min="0" value="0"></div>
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap18">
+    <div class="ap-header" onclick="toggleAP('ap18')">
+      <input type="checkbox" id="ap-cb-ap18" onchange="toggleAP('ap18')">
+      <span class="ap-label">OPERATIVO DE TRÁNSITO</span>
+      <input type="number" id="ap-cnt-ap18" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap18" style="display:none;">
+      <div class="form-grid form-grid-3">
+        <div class="form-field"><label>Boletas emitidas</label><input type="number" id="ap18-bol" min="0" value="0"></div>
+        <div class="form-field"><label>Placas decomisadas</label><input type="number" id="ap18-plac" min="0" value="0"></div>
+        <div class="form-field"><label>Vehículos decomisados</label><input type="number" id="ap18-veh" min="0" value="0"></div>
+        <div class="form-field"><label>Motocicletas decomisadas</label><input type="number" id="ap18-moto" min="0" value="0"></div>
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap19">
+    <div class="ap-header" onclick="toggleAP('ap19')">
+      <input type="checkbox" id="ap-cb-ap19" onchange="toggleAP('ap19')">
+      <span class="ap-label">DROGA DECOMISADA</span>
+      <input type="number" id="ap-cnt-ap19" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap19" style="display:none;">
+      <div class="form-grid form-grid-3">
+        <div class="form-field"><label>Tipo de droga</label>
+          <select id="ap19-tipo"><option value="">Seleccionar...</option><option value="MARIHUANA">MARIHUANA</option><option value="COCAINA">COCAINA</option><option value="CRACK">CRACK</option><option value="OTRAS DROGAS">OTRAS DROGAS</option><option value="EXTASIS">EXTASIS</option><option value="HEROÍNA">HEROÍNA</option><option value="OTROS">OTROS</option></select>
+        </div>
+        <div class="form-field"><label>Presentación</label>
+          <select id="ap19-pres"><option value="">Seleccionar...</option><option value="KILOS">KILOS</option><option value="LIBRAS">LIBRAS</option><option value="ONZAS">ONZAS</option><option value="GRAMOS">GRAMOS</option><option value="PUCHOS">PUCHOS</option><option value="CIGARRILLOS">CIGARRILLOS</option><option value="CAJETAS">CAJETAS</option><option value="TOCOLAS">TOCOLAS</option><option value="PLANTAS">PLANTAS</option><option value="SEMILLAS">SEMILLAS</option><option value="PUNTAS">PUNTAS</option><option value="PIEDRAS">PIEDRAS</option><option value="PASTILLAS">PASTILLAS</option><option value="DOSIS">DOSIS</option></select>
+        </div>
+        <div class="form-field"><label>Cantidad</label>
+          <input type="number" id="ap19-cant" min="0" value="0">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap20">
+    <div class="ap-header" onclick="toggleAP('ap20')">
+      <input type="checkbox" id="ap-cb-ap20" onchange="toggleAP('ap20')">
+      <span class="ap-label">DROGA HALLADA</span>
+      <input type="number" id="ap-cnt-ap20" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap20" style="display:none;">
+      <div class="form-grid form-grid-3">
+        <div class="form-field"><label>Tipo de droga</label>
+          <select id="ap20-tipo"><option value="">Seleccionar...</option><option value="MARIHUANA">MARIHUANA</option><option value="COCAINA">COCAINA</option><option value="CRACK">CRACK</option><option value="OTRAS DROGAS">OTRAS DROGAS</option><option value="EXTASIS">EXTASIS</option><option value="HEROÍNA">HEROÍNA</option><option value="OTROS">OTROS</option></select>
+        </div>
+        <div class="form-field"><label>Presentación</label>
+          <select id="ap20-pres"><option value="">Seleccionar...</option><option value="KILOS">KILOS</option><option value="LIBRAS">LIBRAS</option><option value="ONZAS">ONZAS</option><option value="GRAMOS">GRAMOS</option><option value="PUCHOS">PUCHOS</option><option value="CIGARRILLOS">CIGARRILLOS</option><option value="CAJETAS">CAJETAS</option><option value="TOCOLAS">TOCOLAS</option><option value="PLANTAS">PLANTAS</option><option value="SEMILLAS">SEMILLAS</option><option value="PUNTAS">PUNTAS</option><option value="PIEDRAS">PIEDRAS</option><option value="PASTILLAS">PASTILLAS</option><option value="DOSIS">DOSIS</option></select>
+        </div>
+        <div class="form-field"><label>Cantidad</label>
+          <input type="number" id="ap20-cant" min="0" value="0">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap21">
+    <div class="ap-header" onclick="toggleAP('ap21')">
+      <input type="checkbox" id="ap-cb-ap21" onchange="toggleAP('ap21')">
+      <span class="ap-label">DECOMISO DE ARMAS</span>
+      <input type="number" id="ap-cnt-ap21" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap21" style="display:none;">
+      <div class="form-grid form-grid-3">
+        <div class="form-field"><label>Tipo de arma</label>
+          <select id="ap21-tipo"><option value="">Seleccionar...</option><option value="PISTOLA">PISTOLA</option><option value="REVOLVER">REVOLVER</option><option value="ESCOPETA">ESCOPETA</option><option value="RIFLE">RIFLE</option><option value="CARABINA">CARABINA</option><option value="HECHIZA">HECHIZA</option><option value="JUGUETE">JUGUETE</option><option value="AIRE COMPRIMIDO(BALINES-COPAS)">AIRE COMPRIMIDO(BALINES-COPAS)</option><option value="EXPLOSIVOS">EXPLOSIVOS</option><option value="OTRAS">OTRAS</option><option value="NO INDICA">NO INDICA</option></select>
+        </div>
+        <div class="form-field"><label>Modelo/Marca</label>
+          <select id="ap21-modelo"><option value="">Seleccionar...</option><option value="SMITH & WESSON">SMITH & WESSON</option><option value="ROSSI">ROSSI</option><option value="GLOCK">GLOCK</option><option value="BRYCO">BRYCO</option><option value="RG">RG</option><option value="JERICO">JERICO</option><option value="WINCHESTER">WINCHESTER</option><option value="LORCIN">LORCIN</option><option value="STAR">STAR</option><option value="JENNINGS">JENNINGS</option><option value="BROWNNING">BROWNNING</option><option value="COLT">COLT</option><option value="DAVIS">DAVIS</option><option value="DOBERMAN">DOBERMAN</option><option value="HI POINT">HI POINT</option></select>
+        </div>
+        <div class="form-field"><label>Cantidad</label>
+          <input type="number" id="ap21-cant" min="0" value="0">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap22">
+    <div class="ap-header" onclick="toggleAP('ap22')">
+      <input type="checkbox" id="ap-cb-ap22" onchange="toggleAP('ap22')">
+      <span class="ap-label">DECOMISO DE VENTAS ILEGALES</span>
+      <input type="number" id="ap-cnt-ap22" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap22" style="display:none;">
+      <div class="form-field"><label>Tipo de mercancía</label>
+        <input type="text" id="ap22-tipo" placeholder="Describa la mercancía decomisada">
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap23">
+    <div class="ap-header" onclick="toggleAP('ap23')">
+      <input type="checkbox" id="ap-cb-ap23" onchange="toggleAP('ap23')">
+      <span class="ap-label">CLAUSURA DE LOCAL COMERCIAL</span>
+      <input type="number" id="ap-cnt-ap23" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap23" style="display:none;">
+      <div class="form-field"><label>Nombre(s) del local</label>
+        <input type="text" id="ap23-det" placeholder="Nombre(s) del local...">
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap24">
+    <div class="ap-header" onclick="toggleAP('ap24')">
+      <input type="checkbox" id="ap-cb-ap24" onchange="toggleAP('ap24')">
+      <span class="ap-label">CLAUSURA DE SITIO CLANDESTINO</span>
+      <input type="number" id="ap-cnt-ap24" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap24" style="display:none;">
+      <div class="form-field"><label>Ubicación</label>
+        <input type="text" id="ap24-det" placeholder="Ubicación...">
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap25">
+    <div class="ap-header" onclick="toggleAP('ap25')">
+      <input type="checkbox" id="ap-cb-ap25" onchange="toggleAP('ap25')">
+      <span class="ap-label">DISTURBIO Y/O RIÑAS</span>
+      <input type="number" id="ap-cnt-ap25" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap25" style="display:none;">
+      <div class="form-field"><label>Detenidos (cantidad)</label>
+        <input type="text" id="ap25-det" placeholder="Detenidos (cantidad)...">
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap26">
+    <div class="ap-header" onclick="toggleAP('ap26')">
+      <input type="checkbox" id="ap-cb-ap26" onchange="toggleAP('ap26')">
+      <span class="ap-label">ATENCIÓN A CENTRO EDUCATIVO</span>
+      <input type="number" id="ap-cnt-ap26" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap26" style="display:none;">
+      <div class="form-field"><label>Centro educativo</label>
+        <input type="text" id="ap26-det" placeholder="Centro educativo...">
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap27">
+    <div class="ap-header" onclick="toggleAP('ap27')">
+      <input type="checkbox" id="ap-cb-ap27" onchange="toggleAP('ap27')">
+      <span class="ap-label">TRASLADO DE HERIDOS A CENTRO MÉDICO</span>
+      <input type="number" id="ap-cnt-ap27" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap27" style="display:none;">
+      <div class="form-field"><label>Personas trasladadas</label>
+        <input type="text" id="ap27-det" placeholder="Personas trasladadas...">
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap28">
+    <div class="ap-header" onclick="toggleAP('ap28')">
+      <input type="checkbox" id="ap-cb-ap28" onchange="toggleAP('ap28')">
+      <span class="ap-label">AYUDA A CIUDADANO</span>
+      <input type="number" id="ap-cnt-ap28" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap29">
+    <div class="ap-header" onclick="toggleAP('ap29')">
+      <input type="checkbox" id="ap-cb-ap29" onchange="toggleAP('ap29')">
+      <span class="ap-label">MENORES EN RIESGO SOCIAL</span>
+      <input type="number" id="ap-cnt-ap29" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap29" style="display:none;">
+      <div class="form-field"><label>Acción tomada</label>
+        <input type="text" id="ap29-det" placeholder="Acción tomada...">
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap30">
+    <div class="ap-header" onclick="toggleAP('ap30')">
+      <input type="checkbox" id="ap-cb-ap30" onchange="toggleAP('ap30')">
+      <span class="ap-label">HALLAZGO DE CADÁVER</span>
+      <input type="number" id="ap-cnt-ap30" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap30" style="display:none;">
+      <div class="form-field"><label>Ubicación</label>
+        <input type="text" id="ap30-det" placeholder="Ubicación...">
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap31">
+    <div class="ap-header" onclick="toggleAP('ap31')">
+      <input type="checkbox" id="ap-cb-ap31" onchange="toggleAP('ap31')">
+      <span class="ap-label">LICOR DECOMISADO</span>
+      <input type="number" id="ap-cnt-ap31" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap31" style="display:none;">
+      <div class="form-grid form-grid-3">
+        <div class="form-field"><label>Tipo de licor</label>
+          <select id="ap31-tipo"><option value="">Seleccionar...</option><option value="LICOR (GUAROS)">LICOR (GUAROS)</option><option value="VINO">VINO</option><option value="CERVEZA">CERVEZA</option><option value="ALCOHOL">ALCOHOL</option><option value="OTROS">OTROS</option></select>
+        </div>
+        <div class="form-field"><label>Presentación</label>
+          <select id="ap31-pres"><option value="">Seleccionar...</option><option value="UNIDADES">UNIDADES</option><option value="BOTELLAS">BOTELLAS</option><option value="CAJAS">CAJAS</option><option value="GALONES">GALONES</option><option value="ESTAÑONES">ESTAÑONES</option></select>
+        </div>
+        <div class="form-field"><label>Cantidad</label>
+          <input type="number" id="ap31-cant" min="0" value="0">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap32">
+    <div class="ap-header" onclick="toggleAP('ap32')">
+      <input type="checkbox" id="ap-cb-ap32" onchange="toggleAP('ap32')">
+      <span class="ap-label">REGULACIÓN DE TRÁNSITO</span>
+      <input type="number" id="ap-cnt-ap32" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap32" style="display:none;">
+      <div class="form-grid form-grid-2">
+        <div class="form-field"><label>Minutos</label><input type="number" id="ap32-min" min="0" value="0"></div>
+        <div class="form-field"><label>Ubicación</label><input type="text" id="ap32-ubic" placeholder="Lugar de regulación"></div>
+      </div>
+    </div>
+  </div>
+  <div class="accion-policial" id="ap-item-ap33">
+    <div class="ap-header" onclick="toggleAP('ap33')">
+      <input type="checkbox" id="ap-cb-ap33" onchange="toggleAP('ap33')">
+      <span class="ap-label">PATRULLAJE PREVENTIVO</span>
+      <input type="number" id="ap-cnt-ap33" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap33" style="display:none;">
+      <div class="form-grid form-grid-3">
+        <div class="form-field"><label>Distrito</label>
+          <select id="ap33-dist"><option value="">Seleccionar...</option><option value="Limón">Limón</option><option value="Valle La Estrella">Valle La Estrella</option><option value="Río Blanco">Río Blanco</option><option value="Matama">Matama</option></select>
+        </div>
+        <div class="form-field"><label>Rango horario</label>
+          <input type="text" id="ap33-hora" placeholder="Ej: 06:00 - 10:00">
+        </div>
+        <div class="form-field"><label>Zonas cubiertas</label>
+          <input type="text" id="ap33-zonas" placeholder="Describa las zonas">
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- /#m1-acciones-policiales -->
      <div class="sec-titulo">📄 Partes Policiales Vinculados</div>
      <div class="alert alert-info">Partes del grupo en la misma fecha.</div>
      <div id="m1-partes-vinculados"></div>
@@ -1391,6 +1837,256 @@ const ACCIONES=[
 ];
 const TIPOS_DOC=[{l:"Partes Policiales",id:"td1"},{l:"Actas de Decomiso",id:"td2"},{l:"Actas de Hallazgo",id:"td3"},{l:"Actas de Abandono",id:"td4"},{l:"Actas de Notificación",id:"td5"},{l:"Actas de Secuestro",id:"td6"},{l:"Órdenes de Presentación",id:"td7"},{l:"Manifestaciones de Testigo",id:"td8"},{l:"Boletas de Citación",id:"td9"},{l:"Otros Documentos",id:"td10"}];
 const CUANT_CAMPOS=[["Control de Carreteras","q1"],["Personas Abordadas","q2"],["Personas Investigadas Archivo Criminal","q3"],["Vehículos Abordados","q4"],["Vehículos Investigados Archivo Criminal","q5"],["Motocicletas Abordadas","q6"],["Motocicletas Investigadas Archivo Criminal","q7"],["Personas Detenidas","q8"],["Capturas Penales","q9"],["Capturas por Pensión","q10"],["Órdenes de Presentación","q11"],["Personas Reseñadas","q12"],["Colaboración a Otros Departamentos","q13"],["Clausuras Locales Comerciales","q14"],["Clausuras Sitios Clandestinos","q15"],["Intervención Ventas Ambulantes","q16"]];
+
+// ── CONSTANTES ACCIONES POLICIALES ───────────────────────────
+const AP_CAMPOS = [["ap1", "CONTROL DE CARRETERA"], ["ap2", "PERSONAS ABORDADAS"], ["ap3", "PERSONAS INVESTIGADAS ECU-OIJ"], ["ap4", "VEHÍCULOS ABORDADOS"], ["ap5", "VEHÍCULOS INVESTIGADOS ECU-OIJ"], ["ap6", "MOTOCICLETAS ABORDADAS"], ["ap7", "MOTOCICLETAS INVESTIGADAS ECU-OIJ"], ["ap8", "PERSONAS DETENIDAS"], ["ap9", "CAPTURAS PENALES"], ["ap10", "CAPTURAS POR PENSIÓN ALIMENTARIA"], ["ap11", "ÓRDENES DE PRESENTACIÓN"], ["ap12", "PERSONAS RESEÑADAS"], ["ap14", "INTERVENCIÓN DE VENTAS AMBULANTES"], ["ap15", "RECUPERACIÓN DE VEHÍCULO ROBADO"], ["ap16", "COLISIÓN SIN HERIDOS"], ["ap17", "COLISIÓN CON HERIDOS Y/O FALLECIDOS"], ["ap18", "OPERATIVO DE TRÁNSITO"], ["ap19", "DROGA DECOMISADA"], ["ap20", "DROGA HALLADA"], ["ap21", "DECOMISO DE ARMAS"], ["ap22", "DECOMISO DE VENTAS ILEGALES"], ["ap23", "CLAUSURA DE LOCAL COMERCIAL"], ["ap24", "CLAUSURA DE SITIO CLANDESTINO"], ["ap25", "DISTURBIO Y/O RIÑAS"], ["ap26", "ATENCIÓN A CENTRO EDUCATIVO"], ["ap27", "TRASLADO DE HERIDOS A CENTRO MÉDICO"], ["ap28", "AYUDA A CIUDADANO"], ["ap29", "MENORES EN RIESGO SOCIAL"], ["ap30", "HALLAZGO DE CADÁVER"], ["ap31", "LICOR DECOMISADO"], ["ap32", "REGULACIÓN DE TRÁNSITO"], ["ap33", "PATRULLAJE PREVENTIVO"]];
+const AP_IDS = ["ap1", "ap2", "ap3", "ap4", "ap5", "ap6", "ap7", "ap8", "ap9", "ap10", "ap11", "ap12", "ap14", "ap15", "ap16", "ap17", "ap18", "ap19", "ap20", "ap21", "ap22", "ap23", "ap24", "ap25", "ap26", "ap27", "ap28", "ap29", "ap30", "ap31", "ap32", "ap33"];
+const AP_AUTO = ["ap8", "ap9", "ap10", "ap11", "ap14"];
+const AP_CONTADORES = {};  // id → contador de items
+
+// ── TOGGLE AP ─────────────────────────────────────────────────
+function toggleAP(apId) {
+  const cb  = document.getElementById('ap-cb-'+apId);
+  const body = document.getElementById('ap-body-'+apId);
+  if (!cb || !body) return;
+  const active = cb.checked;
+  body.style.display = active ? 'block' : 'none';
+}
+
+// ── AGREGAR DETALLE DINÁMICO ──────────────────────────────────
+function addDetalle(apId, tipo) {
+  const list = document.getElementById(apId+'-list');
+  if (!list) return;
+  AP_CONTADORES[apId] = (AP_CONTADORES[apId]||0) + 1;
+  const n = AP_CONTADORES[apId];
+  const div = document.createElement('div');
+  div.className = 'ap-detalle-item';
+  div.id = apId+'-det-'+n;
+
+  let inner = '';
+  if (tipo === 'detenido') {
+    inner = `<div class="form-grid form-grid-3">
+      <div class="form-field field-span-3"><label>Delito</label>
+        <input type="text" id="${apId}-delito-${n}" placeholder="Describa el delito">
+      </div>
+      <div class="form-field"><label>Asesor legal MSP</label>
+        <input type="text" id="${apId}-asesor-${n}" placeholder="Nombre del asesor">
+      </div>
+      <div class="form-field"><label>Fiscal de turno</label>
+        <input type="text" id="${apId}-fiscal-${n}" placeholder="Nombre del fiscal">
+      </div>
+    </div>`;
+  } else if (tipo === 'captura_penal') {
+    inner = `<div class="form-grid form-grid-2">
+      <div class="form-field"><label>N° Expediente</label>
+        <input type="text" id="${apId}-exp-${n}" placeholder="Número de expediente">
+      </div>
+      <div class="form-field"><label>Despacho requirente</label>
+        <input type="text" id="${apId}-desp-${n}" placeholder="Nombre del despacho">
+      </div>
+    </div>`;
+  } else if (tipo === 'captura_pension') {
+    inner = `<div class="form-field"><label>N° Expediente</label>
+      <input type="text" id="${apId}-exp-${n}" placeholder="Número de expediente">
+    </div>`;
+  } else if (tipo === 'orden') {
+    inner = `<div class="form-field"><label>N° Expediente</label>
+      <input type="text" id="${apId}-exp-${n}" placeholder="Número de expediente">
+    </div>`;
+  } else if (tipo === 'venta_ambulante') {
+    inner = `<div class="form-grid form-grid-2">
+      <div class="form-field"><label>Sector <span style="color:#c9942a;">*</span></label>
+        <input type="text" id="${apId}-sector-${n}" placeholder="Sector de la intervención" required>
+      </div>
+      <div class="form-field"><label>Hora <span style="color:#c9942a;">*</span></label>
+        <input type="time" id="${apId}-hora-${n}" required>
+      </div>
+    </div>`;
+  }
+
+  div.innerHTML = `<button class="btn-quitar" onclick="quitarDetalle('${apId}',${n})">✕ Quitar</button>${inner}`;
+  list.appendChild(div);
+  actualizarContadorAP(apId);
+  // Activar checkbox automáticamente
+  const cb = document.getElementById('ap-cb-'+apId);
+  if (cb && !cb.checked) { cb.checked=true; toggleAP(apId); }
+}
+
+function quitarDetalle(apId, n) {
+  const el = document.getElementById(apId+'-det-'+n);
+  if (el) el.remove();
+  actualizarContadorAP(apId);
+}
+
+function actualizarContadorAP(apId) {
+  const list = document.getElementById(apId+'-list');
+  const cnt  = document.getElementById('ap-cnt-'+apId);
+  if (!list || !cnt) return;
+  const total = list.querySelectorAll('.ap-detalle-item').length;
+  cnt.textContent = total;
+  // Auto-activar checkbox si hay items
+  const cb = document.getElementById('ap-cb-'+apId);
+  if (cb) cb.checked = total > 0;
+}
+
+// ── LEER TODOS LOS DATOS AP ───────────────────────────────────
+function leerAccionesPoliciales() {
+  const resultado = {};
+  const apPlano = {}; // ap1..ap33 para el servidor
+
+  AP_CAMPOS.forEach(([apId, lbl]) => {
+    const cb = document.getElementById('ap-cb-'+apId);
+    if (!cb || !cb.checked) { apPlano[apId]=0; return; }
+
+    // Leer cantidad
+    const cntEl = document.getElementById('ap-cnt-'+apId);
+    const cnt = cntEl ? (parseInt(cntEl.textContent||cntEl.value)||0) : 0;
+    apPlano[apId] = cnt;
+
+    const datos = { lbl, cnt, detalle:{} };
+
+    // Leer detalles específicos por apId
+    if (apId==='ap1') {
+      datos.detalle = {
+        lugares: document.getElementById('ap1-lugares')?.value||'',
+        nc: parseInt(document.getElementById('ap1-nc')?.value)||0,
+        colab: document.getElementById('ap1-colab')?.value||'',
+        colabTxt: document.getElementById('ap1-colab-txt')?.value||'',
+        obs: document.getElementById('ap1-obs')?.value||''
+      };
+    } else if (['ap3','ap5'].includes(apId)) {
+      datos.detalle = { obs: document.getElementById(apId+'-obs')?.value||'' };
+    } else if (apId==='ap8') {
+      const items=[];
+      document.querySelectorAll('#ap8-list .ap-detalle-item').forEach(d=>{
+        const n=d.id.replace('ap8-det-','');
+        items.push({
+          delito: document.getElementById('ap8-delito-'+n)?.value||'',
+          asesor: document.getElementById('ap8-asesor-'+n)?.value||'',
+          fiscal: document.getElementById('ap8-fiscal-'+n)?.value||''
+        });
+      });
+      datos.detalle = { items };
+    } else if (apId==='ap9') {
+      const items=[];
+      document.querySelectorAll('#ap9-list .ap-detalle-item').forEach(d=>{
+        const n=d.id.replace('ap9-det-','');
+        items.push({
+          exp: document.getElementById('ap9-exp-'+n)?.value||'',
+          desp: document.getElementById('ap9-desp-'+n)?.value||''
+        });
+      });
+      datos.detalle = { items };
+    } else if (apId==='ap10') {
+      const items=[];
+      document.querySelectorAll('#ap10-list .ap-detalle-item').forEach(d=>{
+        const n=d.id.replace('ap10-det-','');
+        items.push({ exp: document.getElementById('ap10-exp-'+n)?.value||'' });
+      });
+      datos.detalle = { items };
+    } else if (apId==='ap11') {
+      const items=[];
+      document.querySelectorAll('#ap11-list .ap-detalle-item').forEach(d=>{
+        const n=d.id.replace('ap11-det-','');
+        items.push({ exp: document.getElementById('ap11-exp-'+n)?.value||'' });
+      });
+      datos.detalle = { items };
+    } else if (apId==='ap12') {
+      datos.detalle = { motivo: document.getElementById('ap12-obs')?.value||'' };
+    } else if (apId==='ap14') {
+      const items=[];
+      document.querySelectorAll('#ap14-list .ap-detalle-item').forEach(d=>{
+        const n=d.id.replace('ap14-det-','');
+        const sector=document.getElementById('ap14-sector-'+n)?.value||'';
+        const hora=document.getElementById('ap14-hora-'+n)?.value||'';
+        if(!sector||!hora){ toast('⚠️ Complete sector y hora en cada intervención de ventas ambulantes','warning'); }
+        items.push({ sector, hora });
+      });
+      datos.detalle = { items };
+    } else if (apId==='ap15') {
+      datos.detalle = { placas: document.getElementById('ap15-placas')?.value||'' };
+    } else if (apId==='ap16') {
+      datos.detalle = { veh: parseInt(document.getElementById('ap16-veh')?.value)||0 };
+    } else if (apId==='ap17') {
+      datos.detalle = {
+        her: parseInt(document.getElementById('ap17-her')?.value)||0,
+        fall: parseInt(document.getElementById('ap17-fall')?.value)||0
+      };
+    } else if (apId==='ap18') {
+      datos.detalle = {
+        bol: parseInt(document.getElementById('ap18-bol')?.value)||0,
+        plac: parseInt(document.getElementById('ap18-plac')?.value)||0,
+        veh: parseInt(document.getElementById('ap18-veh')?.value)||0,
+        moto: parseInt(document.getElementById('ap18-moto')?.value)||0
+      };
+    } else if (['ap19','ap20'].includes(apId)) {
+      datos.detalle = {
+        tipo: document.getElementById(apId+'-tipo')?.value||'',
+        pres: document.getElementById(apId+'-pres')?.value||'',
+        cant: parseInt(document.getElementById(apId+'-cant')?.value)||0
+      };
+    } else if (apId==='ap21') {
+      datos.detalle = {
+        tipo: document.getElementById('ap21-tipo')?.value||'',
+        modelo: document.getElementById('ap21-modelo')?.value||'',
+        cant: parseInt(document.getElementById('ap21-cant')?.value)||0
+      };
+    } else if (apId==='ap22') {
+      datos.detalle = { tipo: document.getElementById('ap22-tipo')?.value||'' };
+    } else if (['ap23','ap24','ap25','ap26','ap29','ap30'].includes(apId)) {
+      datos.detalle = { det: document.getElementById(apId+'-det')?.value||'' };
+    } else if (apId==='ap27') {
+      datos.detalle = { personas: parseInt(document.getElementById('ap27-det')?.value)||0 };
+    } else if (apId==='ap31') {
+      datos.detalle = {
+        tipo: document.getElementById('ap31-tipo')?.value||'',
+        pres: document.getElementById('ap31-pres')?.value||'',
+        cant: parseInt(document.getElementById('ap31-cant')?.value)||0
+      };
+    } else if (apId==='ap32') {
+      datos.detalle = {
+        min: parseInt(document.getElementById('ap32-min')?.value)||0,
+        ubic: document.getElementById('ap32-ubic')?.value||''
+      };
+    } else if (apId==='ap33') {
+      datos.detalle = {
+        dist: document.getElementById('ap33-dist')?.value||'',
+        hora: document.getElementById('ap33-hora')?.value||'',
+        zonas: document.getElementById('ap33-zonas')?.value||''
+      };
+    }
+    resultado[apId] = datos;
+  });
+
+  return { resultado, apPlano };
+}
+
+// ── LIMPIAR ACCIONES POLICIALES ───────────────────────────────
+function limpiarAccionesPoliciales() {
+  AP_IDS.forEach(apId => {
+    const cb = document.getElementById('ap-cb-'+apId);
+    const body = document.getElementById('ap-body-'+apId);
+    const cnt = document.getElementById('ap-cnt-'+apId);
+    if (cb) cb.checked = false;
+    if (body) body.style.display = 'none';
+    if (cnt) { cnt.textContent='0'; cnt.value='0'; }
+    const list = document.getElementById(apId+'-list');
+    if (list) list.innerHTML = '';
+    AP_CONTADORES[apId] = 0;
+    // Limpiar campos
+    ['lugares','nc','obs','colabTxt','tipo','pres','cant','motivo','placas',
+     'veh','her','fall','bol','plac','moto','modelo','min','ubic','dist','hora','zonas','det']
+     .forEach(f => {
+       const el = document.getElementById(apId+'-'+f);
+       if (el) { el.value=''; if(el.tagName==='INPUT'&&el.type==='number') el.value=0; }
+     });
+    const colabSel = document.getElementById('ap1-colab');
+    if (colabSel) colabSel.value='';
+    const colabDet = document.getElementById('ap1-colab-det');
+    if (colabDet) colabDet.style.display='none';
+  });
+}
+
 const MESES_NOM=["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Setiembre","Octubre","Noviembre","Diciembre"];
 
 // ============================================
@@ -1442,7 +2138,7 @@ function print2(html){
 <head>
 <meta charset="UTF-8">
 <style>
-  @page{size:letter portrait;margin:1.8cm 2cm;}
+  @page{size:letter portrait;margin:2.5cm 3cm;}
   *{box-sizing:border-box;}
   body{font-family:Arial,sans-serif;font-size:11pt;color:#111;background:white;margin:0;padding:0;}
   p{text-align:justify;line-height:1.6;margin:4px 0;}
@@ -1494,7 +2190,108 @@ function toggleAccion(id){const cb=document.getElementById('ach-'+id);const body
 function addDecomiso(){nDec++;const cats=Object.keys(DECOMISOS);const d=document.createElement('div');d.className='decomiso-item';d.id='dec-'+nDec;d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><strong style="font-size:13px;color:var(--azul);">Decomiso #${nDec}</strong><button class="btn btn-danger btn-sm" onclick="this.closest('.decomiso-item').remove()">✕</button></div><div class="form-grid form-grid-3"><div class="form-field"><label>Categoría</label><select id="dc-cat-${nDec}" onchange="updDecSubcat(${nDec})"><option value="">Seleccionar...</option>${cats.map(c=>`<option>${c}</option>`).join('')}</select></div><div class="form-field"><label>Tipo Específico</label><select id="dc-tipo-${nDec}"><option value="">Primero seleccione categoría</option></select></div><div class="form-field"><label>Subtipo / Marca / Calibre</label><select id="dc-sub-${nDec}"><option value="">—</option></select></div><div class="form-field"><label>Cantidad</label><input type="number" id="dc-cant-${nDec}" min="0" value="1"></div><div class="form-field"><label>Parte Policial Vinculado</label><select id="dc-parte-${nDec}"><option value="">Sin vincular</option>${D.m2.map(p=>`<option value="${p.id}">${p.id}</option>`).join('')}</select></div><div class="form-field"><label>N° Acta de Decomiso</label><input type="text" id="dc-acta-${nDec}" placeholder="N° de acta"></div></div>`;document.getElementById('m1-decomisos-list').appendChild(d);}
 function updDecSubcat(n){const cat=document.getElementById('dc-cat-'+n).value;const tipoSel=document.getElementById('dc-tipo-'+n);const subSel=document.getElementById('dc-sub-'+n);const data=DECOMISOS[cat]||{};const tipos=data.tipos||[];tipoSel.innerHTML='<option value="">Seleccionar...</option>'+tipos.map(t=>`<option>${t}</option>`).join('');subSel.innerHTML='<option value="">—</option>';tipoSel.onchange=()=>{const all=[...(data.marcas||[]),(data.calibres||[]),...(data.presentaciones||[])].filter((v,i,a)=>v&&a.indexOf(v)===i);subSel.innerHTML='<option value="">—</option>'+all.map(x=>`<option>${x}</option>`).join('');};}
 
-function imprimirM1(){const grupo=Array.from(document.querySelectorAll('#m1-grupo input:checked')).map(cb=>cb.value);if(!grupo.length){toast('Seleccione al menos un oficial','warning');return;}const consec=document.getElementById('c-m1').textContent;const cuantItems=CUANT_CAMPOS.map(([l,id])=>{const v=parseInt(document.getElementById(id)?.value)||0;return v>0?`<li><strong>${l}:</strong> ${v}</li>`:null;}).filter(Boolean).join('');const accsItems=ACCIONES.filter(a=>document.getElementById('ach-'+a.id)?.checked).map(a=>{const det=a.campos.map(campo=>{const fid=`acf-${a.id}-${campo.l.replace(/\s/g,'_')}`;const el=document.getElementById(fid);return el&&el.value?`${campo.l}: ${el.value}`:null;}).filter(Boolean).join(', ');return`<li><strong>${a.lbl}</strong>${det?` — ${det}`:''}</li>`;}).join('');const decItems=Array.from(document.querySelectorAll('.decomiso-item')).map(d=>{const n=d.id.replace('dec-','');return`<li>${document.getElementById('dc-cat-'+n)?.value} — ${document.getElementById('dc-tipo-'+n)?.value} (${document.getElementById('dc-cant-'+n)?.value})${document.getElementById('dc-acta-'+n)?.value?` | Acta: ${document.getElementById('dc-acta-'+n).value}`:''}</li>`;}).join('');const docCuantItems=TIPOS_DOC.map(t=>{const v=parseInt(document.getElementById(t.id)?.value)||0;return v>0?`<li><strong>${t.l}:</strong> ${v}</li>`:null;}).filter(Boolean).join('');const firmas=grupo.map(n=>`<div style="display:inline-block;width:44%;margin:24px 2% 8px 2%;text-align:center;"><div style="height:55px;border-bottom:1px solid #333;margin-bottom:6px;"></div><div style="font-size:12px;font-weight:600;">${n}</div><div style="font-size:10px;color:#666;">Oficial de Policía Municipal — Firma</div></div>`).join('');print2(`<div style="max-width:800px;margin:0 auto;"><div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a3a5c;padding-bottom:12px;margin-bottom:14px;"><img src="${I_MUNI}" style="height:70px;"><div style="text-align:center;"><strong>MUNICIPALIDAD DEL CANTÓN CENTRAL DE LIMÓN</strong><br>POLICÍA MUNICIPAL DE LIMÓN<br>Gestión de Seguridad Ciudadana y Vial<br><strong>${consec}</strong></div><img src="${I_PML}" style="height:70px;"></div><h2 style="text-align:center;color:#1a3a5c;margin-bottom:12px;">REPORTE DIARIO DE LABORES</h2><table style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:10px;"><tr><td style="padding:4px;"><strong>Fecha Inicio:</strong> ${document.getElementById('m1-fi')?.value}</td><td style="padding:4px;"><strong>Fecha Fin:</strong> ${document.getElementById('m1-ff')?.value}</td><td style="padding:4px;"><strong>Hora Inicio:</strong> ${document.getElementById('m1-hi')?.value}</td><td style="padding:4px;"><strong>Hora Fin:</strong> ${document.getElementById('m1-hf')?.value}</td></tr><tr><td style="padding:4px;"><strong>Móvil:</strong> ${document.getElementById('m1-movil')?.value}</td><td style="padding:4px;"><strong>Área:</strong> ${document.getElementById('m1-area')?.value}</td><td colspan="2" style="padding:4px;"><strong>Supervisor:</strong> ${document.getElementById('m1-sup')?.value}</td></tr></table><p style="margin-bottom:8px;font-size:12px;"><strong>GRUPO DE TRABAJO:</strong> ${grupo.join(' · ')}</p>${cuantItems?`<p style="margin-bottom:6px;font-size:12px;"><strong>OPERATIVIDAD CUANTITATIVA:</strong></p><ul style="font-size:12px;margin-left:20px;margin-bottom:10px;">${cuantItems}</ul>`:''}${decItems?`<p style="margin-bottom:6px;font-size:12px;"><strong>DECOMISOS REALIZADOS:</strong></p><ul style="font-size:12px;margin-left:20px;margin-bottom:10px;">${decItems}</ul>`:''}${accsItems?`<p style="margin-bottom:6px;font-size:12px;"><strong>TIPOS DE ACCIÓN REALIZADAS:</strong></p><ul style="font-size:12px;margin-left:20px;margin-bottom:10px;">${accsItems}</ul>`:''}${docCuantItems?`<p style="margin-bottom:6px;font-size:12px;"><strong>DOCUMENTOS REALIZADOS:</strong></p><ul style="font-size:12px;margin-left:20px;margin-bottom:10px;">${docCuantItems}</ul><p style="font-size:12px;margin-bottom:8px;"><em>Detalle consecutivos: ${document.getElementById('m1-docs-obs')?.value}</em></p>`:''}${document.getElementById('m1-novedades')?.value?`<p style="margin-bottom:6px;font-size:12px;"><strong>NOVEDADES:</strong></p><p style="font-size:12px;margin-bottom:10px;text-align:justify;line-height:1.7;">${(document.getElementById('m1-novedades').value||'').replace(/\n/g,'<br>')}</p>`:''}  <div style="margin-top:40px;"><strong>FIRMAS DE LOS OFICIALES:</strong><br><br>${firmas}</div><div style="text-align:center;margin-top:20px;font-size:10px;color:#999;border-top:1px solid #ddd;padding-top:8px;">"Limón Ciudad de la Vida" · ${consec}</div></div>`);}
+function imprimirM1(){
+  const r = D.m1.length ? D.m1[0] : null;
+  const fi    = r?.fi    || document.getElementById('m1-fi')?.value||'';
+  const ff    = r?.ff    || document.getElementById('m1-ff')?.value||'';
+  const hi    = r?.hi    || document.getElementById('m1-hi')?.value||'';
+  const hf    = r?.hf    || document.getElementById('m1-hf')?.value||'';
+  const movil = r?.movil || document.getElementById('m1-movil')?.value||'';
+  const area  = r?.area  || document.getElementById('m1-area')?.value||'';
+  const sup   = r?.supervisor || document.getElementById('m1-sup')?.value||'';
+  const colab = r?.colab || document.getElementById('m1-colab')?.value||'';
+  const nov   = r?.novedades  || document.getElementById('m1-novedades')?.value||'';
+  const consec= document.getElementById('c-m1')?.textContent||'';
+
+  let grupo=[];
+  if(r && Array.isArray(r.grupo)) grupo=r.grupo.map(g=>g.n||g);
+  else grupo=Array.from(document.querySelectorAll('#m1-grupo input:checked')).map(cb=>cb.value);
+
+  // Leer acciones para impresión
+  let apItems='';
+  if(r && r.cuant && Object.keys(r.cuant).length){
+    // Desde registro guardado
+    AP_CAMPOS.forEach(([apId,lbl])=>{
+      const v=parseInt(r.cuant[lbl])||0;
+      if(v>0){
+        let det='';
+        if(r.acciones){
+          const acc=Array.isArray(r.acciones)?r.acciones.find(a=>a.lbl===lbl):r.acciones[apId];
+          if(acc?.detalle){
+            const d=acc.detalle;
+            if(d.obs) det+=` — ${d.obs}`;
+            if(d.lugares) det+=` — Lugares: ${d.lugares}`;
+            if(d.tipo) det+=` — ${d.tipo}`;
+            if(d.pres) det+=` (${d.pres})`;
+            if(d.cant) det+=` × ${d.cant}`;
+            if(d.modelo) det+=` ${d.modelo}`;
+            if(d.motivo) det+=` — ${d.motivo}`;
+            if(d.items && d.items.length){
+              det+='<ul style="margin:2px 0 0 12px;font-size:10pt;">';
+              d.items.forEach(it=>{
+                if(it.delito) det+=`<li>Delito: ${it.delito}${it.asesor?' | Asesor: '+it.asesor:''}${it.fiscal?' | Fiscal: '+it.fiscal:''}</li>`;
+                else if(it.exp) det+=`<li>Expediente: ${it.exp}${it.desp?' | Despacho: '+it.desp:''}</li>`;
+                else if(it.sector) det+=`<li>Sector: ${it.sector} — Hora: ${it.hora}</li>`;
+              });
+              det+='</ul>';
+            }
+          }
+        }
+        apItems+=`<li style="margin-bottom:4px;"><strong>${lbl}:</strong> ${v}${det}</li>`;
+      }
+    });
+  } else {
+    // Desde DOM (formulario activo)
+    const {resultado} = leerAccionesPoliciales();
+    Object.values(resultado).forEach(a=>{
+      if(a.cnt>0){
+        apItems+=`<li style="margin-bottom:4px;"><strong>${a.lbl}:</strong> ${a.cnt}</li>`;
+      }
+    });
+  }
+
+  if(!grupo.length && !apItems){toast('No hay datos para imprimir','warning');return;}
+
+  const decItems = (r && Array.isArray(r.decomisos))
+    ? r.decomisos.filter(d=>d.cat).map(d=>`<li><strong>${d.cat}</strong>${d.tipo?' — '+d.tipo:''}: ${d.cant||1}</li>`).join('')
+    : '';
+
+  print2(`
+  <div style="max-width:100%;font-family:Arial,sans-serif;font-size:11pt;">
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a3a5c;padding-bottom:10px;margin-bottom:14px;">
+      <img src="${I_PML}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
+      <div style="text-align:center;flex:1;padding:0 10px;">
+        <div style="font-weight:700;font-size:13pt;color:#1a3a5c;">MUNICIPALIDAD DEL CANTÓN CENTRAL DE LIMÓN</div>
+        <div>Policía Municipal de Limón</div>
+        <div style="font-weight:700;font-size:12pt;margin-top:4px;">REPORTE DIARIO DE LABORES</div>
+        <div style="font-size:10pt;color:#555;">${consec}</div>
+      </div>
+      <img src="${I_MUNI}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+      <tr>
+        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>F. Inicio:</strong> ${fi}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>F. Fin:</strong> ${ff}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>H. Inicio:</strong> ${hi}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>H. Fin:</strong> ${hf}</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 6px;border:1px solid #ddd;"><strong>Móvil:</strong> ${movil}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;" colspan="2"><strong>Área:</strong> ${area}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;"><strong>Supervisor:</strong> ${sup}</td>
+      </tr>
+    </table>
+    ${grupo.length?`<p style="margin:6px 0 4px;"><strong>GRUPO DE TRABAJO:</strong></p><p style="margin:0 0 10px;">${grupo.join(' &nbsp;|&nbsp; ')}</p>`:''}
+    ${apItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">ACCIONES POLICIALES REALIZADAS</p><ul style="margin:4px 0 10px;padding-left:18px;">${apItems}</ul>`:''}
+    ${colab?`<p style="margin:6px 0 2px;font-weight:700;">COLABORACIÓN A OTROS DEPARTAMENTOS</p><p style="margin:0 0 8px;text-align:justify;">${colab}</p>`:''}
+    ${decItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">DECOMISOS</p><ul style="margin:4px 0 10px;padding-left:18px;">${decItems}</ul>`:''}
+    ${nov?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">NOVEDADES POR RANGO DE HORAS</p><p style="margin:0 0 14px;text-align:justify;line-height:1.7;white-space:pre-wrap;word-break:break-word;">${nov.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`:''}
+    <div style="margin-top:30px;display:flex;flex-wrap:wrap;gap:20px;">
+      ${grupo.map(n=>`<div style="min-width:180px;flex:1;text-align:center;"><div style="height:50px;border-bottom:1px solid #333;margin-bottom:5px;"></div><div style="font-size:11pt;font-weight:600;">${n}</div><div style="font-size:9pt;color:#666;">Oficial de Policía Municipal</div></div>`).join('')}
+    </div>
+    <div style="text-align:center;margin-top:18px;font-size:9pt;color:#999;border-top:1px solid #ddd;padding-top:6px;">"Limón Ciudad de la Vida" · ${consec}</div>
+  </div>`);
+}
 function limpiarM1(){
   // Limpiar TODOS los inputs, selects y textareas del formulario M1
   const contenedor = document.getElementById('m1-nuevo');
@@ -1525,6 +2322,8 @@ function limpiarM1(){
   // Ocultar campo moto
   const motoW=document.getElementById('m1-moto-w');
   if(motoW)motoW.style.display='none';
+
+  limpiarAccionesPoliciales();
 }
 
 
@@ -1672,7 +2471,59 @@ function previsualizarInforme(){const oficio=document.getElementById('m6-oficio'
 </div><div style="text-align:center;margin-top:14px;font-size:11px;color:#999;">"Limón Ciudad de la Vida"</div></div>`;}
 function generarConclusionRobusta(desde,hasta){const parrafos=[];if(!D.m1.length&&!D.m2.length&&!D.m3a.length&&!D.m4.length&&!D.m7.length)return'<p style="color:#999;">No hay datos registrados. Complete los registros antes de generar la conclusión.</p>';if(D.m1.length||D.m2.length){const tDet=D.m1.reduce((s,r)=>s+(r.cuant?.['Personas Detenidas']||0),0);const tAbord=D.m1.reduce((s,r)=>s+(r.cuant?.['Personas Abordadas']||0),0);parrafos.push(`<p style="margin-bottom:10px;">La Policía Municipal de Limón evidenció una presencia operativa constante con <strong>${D.m1.length}</strong> reportes diarios y <strong>${D.m2.length}</strong> partes policiales. ${tAbord>0?`Se abordaron <strong>${fmt(tAbord)}</strong> personas en labores de control de campo.`:''}${tDet>0?` Se ejecutaron <strong>${tDet}</strong> detenciones, reflejando la gestión activa en el mantenimiento del orden público.`:''}</p>`);}if(D.m3a.length){const tIncs=D.m3a.reduce((s,r)=>s+(r.incidentes?.length||0),0);parrafos.push(`<p style="margin-bottom:10px;">El Centro de Video Protección operó de forma ininterrumpida, registrando <strong>${D.m3a.length}</strong> bitácoras con <strong>${tIncs}</strong> incidentes documentados y tramitando <strong>${D.m3b.length}</strong> solicitudes de secuestro de video.</p>`);}if(D.m4.length){const tEst=D.m4.reduce((s,r)=>s+r.est,0);parrafos.push(`<p style="margin-bottom:10px;">La Unidad de Programas Preventivos realizó <strong>${D.m4.length}</strong> visitas capacitando a <strong>${fmt(tEst)}</strong> estudiantes, consolidando el compromiso institucional con la prevención desde los centros educativos.</p>`);}if(D.m7.length){const tInf=D.m7.reduce((s,r)=>s+r.inf,0);const tMonto=D.m7.reduce((s,r)=>s+r.monto,0);parrafos.push(`<p style="margin-bottom:10px;">El Departamento de Estacionómetros registró <strong>${fmt(tInf)}</strong> infracciones generando <strong>₡${fmt(tMonto)}</strong> en ingresos municipales.</p>`);}parrafos.push(`<p>Los resultados del período <strong>${desde}</strong> al <strong>${hasta}</strong> demuestran el compromiso de la Gestión de Seguridad Ciudadana y Vial con el fortalecimiento de la seguridad y convivencia ciudadana en el Cantón Central de Limón. Los datos consignados en este informe constituyen evidencia objetiva del desempeño institucional de cada uno de sus departamentos.</p>`);return parrafos.join('');}
 function imprimirInforme(){previsualizarInforme();setTimeout(()=>{print2(document.getElementById('m6-preview').innerHTML);},400);}
-function exportarWord(){previsualizarInforme();setTimeout(()=>{const content=document.getElementById('m6-preview').innerHTML;const html=`<html xmlns:o='urn:schemas-microsoft-com:office:office'><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;font-size:12pt;}p{text-align:justify;line-height:1.6;}</style></head><body>${content}</body></html>`;const blob=new Blob(['\ufeff',html],{type:'application/msword'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`Informe-Rendicion-${document.getElementById('m6-oficio').value||'informe'}-${hoy()}.doc`;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);toast('📄 Exportado como Word');},400);}
+function exportarWord(){previsualizarInforme();setTimeout(()=>{const content=document.getElementById('m6-preview').innerHTML;const html=`<html xmlns:o='urn:schemas-microsoft-com:office:office'><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;font-size:12pt;}p{text-align:justify;line-height:1.6;}
+/* ── ACCIONES POLICIALES REALIZADAS ─────────────────────── */
+.accion-policial{
+  border:1px solid var(--gris-borde);border-radius:8px;
+  margin-bottom:6px;overflow:hidden;background:var(--fondo-card);
+}
+.ap-header{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  cursor:pointer;user-select:none;
+  background:rgba(26,58,92,0.04);
+  transition:background 0.15s;
+}
+.ap-header:hover{background:rgba(26,58,92,0.09);}
+.ap-header input[type=checkbox]{
+  width:16px;height:16px;cursor:pointer;flex-shrink:0;
+  accent-color:var(--azul);
+}
+.ap-label{
+  flex:1;font-family:'Rajdhani',sans-serif;font-size:13px;
+  font-weight:700;color:var(--azul);text-transform:uppercase;
+  letter-spacing:0.3px;
+}
+.ap-cnt{
+  width:72px!important;padding:4px 8px!important;
+  border:1.5px solid var(--gris-borde)!important;
+  border-radius:6px!important;font-size:13px!important;
+  font-weight:700;text-align:center;background:white;
+}
+.ap-cnt-auto{
+  background:var(--azul-claro);color:var(--azul);
+  padding:3px 12px;border-radius:6px;font-size:13px;
+  font-weight:700;min-width:44px;text-align:center;
+}
+.ap-body{
+  padding:12px 14px;border-top:1px solid var(--gris-borde);
+  background:rgba(255,255,255,0.6);
+}
+.ap-detalle-item{
+  background:rgba(26,58,92,0.04);border:1px solid var(--gris-borde);
+  border-radius:6px;padding:10px 12px;margin-bottom:8px;position:relative;
+}
+.ap-detalle-item .btn-quitar{
+  position:absolute;top:8px;right:8px;
+  background:rgba(139,26,26,0.1);border:none;
+  color:#8b1a1a;padding:2px 8px;border-radius:4px;
+  font-size:11px;cursor:pointer;
+}
+.ap-detalle-item .btn-quitar:hover{background:rgba(139,26,26,0.2);}
+.ap-obligatorio{
+  border-left:3px solid var(--dorado)!important;
+}
+
+</style></head><body>${content}</body></html>`;const blob=new Blob(['\ufeff',html],{type:'application/msword'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`Informe-Rendicion-${document.getElementById('m6-oficio').value||'informe'}-${hoy()}.doc`;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);toast('📄 Exportado como Word');},400);}
 
 
 // ADMINISTRACIÓN
@@ -1780,129 +2631,49 @@ function mkChart(canvasId,tipo,labels,data,colors){
 // OBS 2: ESTADÍSTICAS M1
 // ============================================
 function renderStatsM1(){
-  const cont=document.getElementById('stats-m1-cont');if(!cont)return;
-  const desde=document.getElementById('m1-stats-desde')?.value||'';
-  const hasta=document.getElementById('m1-stats-hasta')?.value||'';
-  const filtMov=document.getElementById('m1-stats-movil')?.value||'';
-
-  // Poblar select de oficiales si está vacío (para compatibilidad con filtro anterior)
-  const selOf=document.getElementById('m1-stats-oficial');
-  if(selOf&&selOf.options.length<=1){
-    POLICIAS.forEach(p=>{const opt=document.createElement('option');opt.value=p.n;opt.textContent=p.n.split(' ')[0]+' '+p.n.split(' ')[1];selOf.appendChild(opt);});
+  const cont=document.getElementById('stats-m1');
+  if(!cont)return;
+  const datos=D.m1||[];
+  if(!datos.length){
+    cont.innerHTML='<div class="alert">No hay reportes registrados.</div>';return;
   }
 
-  // Filtrar registros por período y móvil
-  let datos=D.m1.filter(r=>{
-    if(desde&&r.fi<desde) return false;
-    if(hasta&&r.fi>hasta) return false;
-    if(filtMov&&r.movil!==filtMov) return false;
-    return true;
+  // Sumar todos los campos AP por etiqueta
+  const totales={};
+  AP_CAMPOS.forEach(([apId,lbl])=>{ totales[lbl]=0; });
+
+  datos.forEach(r=>{
+    AP_CAMPOS.forEach(([apId,lbl])=>{
+      const v = r.cuant?.[lbl] || parseInt(r[apId]) || 0;
+      totales[lbl] = (totales[lbl]||0) + v;
+    });
   });
 
-  if(!datos.length){
-    cont.innerHTML='<div class="alert alert-warning">No hay reportes que coincidan con los filtros seleccionados.</div>';
-    return;
-  }
+  // Resumen top
+  const totAbord = totales['PERSONAS ABORDADAS']||0;
+  const totDet   = totales['PERSONAS DETENIDAS']||0;
+  const totCap   = totales['CAPTURAS PENALES']||0;
+  const totVeh   = totales['VEHÍCULOS ABORDADOS']||0;
+  const totPat   = totales['PATRULLAJE PREVENTIVO']||0;
 
-  const total=datos.length;
-  const per=desde&&hasta?`Período, ${desde} al ${hasta}`:'Período general';
-  const ley=`<div class="chart-leyenda"><div class="l1">Gestión de Seguridad Ciudadana y Vial</div><div class="l2">Departamento de Policía Municipal</div><div class="l3">${per}</div></div>`;
-
-  // Decomisos por categoría
-  const decCat={};
-  datos.forEach(r=>(r.decomisos||[]).forEach(d=>{if(d.cat)decCat[d.cat]=(decCat[d.cat]||0)+parseInt(d.cant||1);}));
-
-  // Acciones por tipo
-  const accTipo={};
-  datos.forEach(r=>(r.acciones||[]).forEach(a=>{accTipo[a.lbl]=(accTipo[a.lbl]||0)+1;}));
-
-  // ============================================================
-  // RENDIMIENTO POR GRUPO DE TRABAJO (no por oficial individual)
-  // Cada registro = un grupo en una fecha específica
-  // La estadística refleja el trabajo colectivo del grupo ese día
-  // ============================================================
-  const porGrupo=datos.map(r=>{
-    const integrantes=(r.grupo||[]).map(g=>g.n.split(' ')[0]+' '+g.n.split(' ')[1]).join(', ');
-    return {
-      id: r.id,
-      fecha: r.fi||r.fecha||'',
-      grupo: integrantes||'Sin grupo registrado',
-      nIntegrantes: (r.grupo||[]).length,
-      movil: r.movil||'—',
-      abord: r.cuant?.['Personas Abordadas']||0,
-      det:   r.cuant?.['Personas Detenidas']||0,
-      cap:   r.cuant?.['Capturas Penales']||0,
-      dec:   (r.decomisos||[]).length,
-      acc:   (r.acciones||[]).filter(a=>a.lbl).length,
-      nAcc:  (r.acciones||[]).length,
-    };
-  }).sort((a,b)=>b.fecha.localeCompare(a.fecha));
-
-  // Totales generales
-  const totAbord=datos.reduce((s,r)=>s+(r.cuant?.['Personas Abordadas']||0),0);
-  const totDet=datos.reduce((s,r)=>s+(r.cuant?.['Personas Detenidas']||0),0);
-  const totCap=datos.reduce((s,r)=>s+(r.cuant?.['Capturas Penales']||0),0);
-  const totDec=datos.reduce((s,r)=>s+(r.decomisos?.length||0),0);
-
-  // Tabla de grupos
-  const filasGrupo=porGrupo.map(g=>`<tr>
-    <td style="padding:7px;font-size:11px;color:var(--texto-sec);">${g.fecha}</td>
-    <td style="padding:7px;font-size:11px;">${g.grupo}</td>
-    <td style="padding:7px;text-align:center;">${g.nIntegrantes}</td>
-    <td style="padding:7px;text-align:center;">${g.movil}</td>
-    <td style="padding:7px;text-align:right;font-weight:700;">${g.abord}</td>
-    <td style="padding:7px;text-align:right;">${g.det}</td>
-    <td style="padding:7px;text-align:right;">${g.cap}</td>
-    <td style="padding:7px;text-align:right;">${g.dec}</td>
-  </tr>`).join('');
+  // Construir tabla
+  const filas = AP_CAMPOS.map(([apId,lbl])=>{
+    const v=totales[lbl]||0;
+    return v>0?`<tr><td>${lbl}</td><td style="text-align:center;font-weight:700;">${v}</td></tr>`:'';
+  }).join('');
 
   cont.innerHTML=`
-    <div class="stats-grid">
-      <div class="stat-card azul"><div class="stat-valor">${total}</div><div class="stat-label">Jornadas en período</div></div>
-      <div class="stat-card dorado"><div class="stat-valor">${totDec}</div><div class="stat-label">Decomisos realizados</div></div>
-      <div class="stat-card verde"><div class="stat-valor">${totDet}</div><div class="stat-label">Personas detenidas</div></div>
-      <div class="stat-card rojo"><div class="stat-valor">${totAbord}</div><div class="stat-label">Personas abordadas</div></div>
-    </div>
-
-    <div class="chart-container">
-      ${ley}
-      <strong>Operatividad por Grupo de Trabajo — ${per}</strong>
-      <div class="alert alert-info" style="margin-top:8px;font-size:12px;">
-        Cada fila representa una jornada de trabajo con el grupo asignado en esa fecha.
-        La estadística refleja el resultado colectivo del grupo, no de un oficial individual.
-      </div>
-      <div class="tabla-wrapper" style="margin-top:8px;">
-        <table><thead><tr style="background:var(--azul);color:white;">
-          <th style="padding:8px;">Fecha</th>
-          <th style="padding:8px;">Grupo de Trabajo</th>
-          <th style="padding:8px;text-align:center;">Integrantes</th>
-          <th style="padding:8px;text-align:center;">Móvil</th>
-          <th style="padding:8px;text-align:right;">Abordados</th>
-          <th style="padding:8px;text-align:right;">Detenidos</th>
-          <th style="padding:8px;text-align:right;">Capturas</th>
-          <th style="padding:8px;text-align:right;">Decomisos</th>
-        </tr></thead>
-        <tbody>${filasGrupo||'<tr><td colspan="8" style="text-align:center;color:#999;padding:12px;">Sin datos</td></tr>'}</tbody>
-        <tfoot><tr style="background:#f0f4f8;font-weight:700;">
-          <td colspan="4" style="padding:7px;font-size:12px;">TOTALES DEL PERÍODO</td>
-          <td style="padding:7px;text-align:right;">${totAbord}</td>
-          <td style="padding:7px;text-align:right;">${totDet}</td>
-          <td style="padding:7px;text-align:right;">${totCap}</td>
-          <td style="padding:7px;text-align:right;">${totDec}</td>
-        </tr></tfoot>
-        </table>
-      </div>
-    </div>
-
-    <div class="form-grid form-grid-2">
-      <div class="chart-container">${ley}<strong>Decomisos por Categoría</strong><div class="chart-wrap"><canvas id="ch-m1-dec"></canvas></div></div>
-      <div class="chart-container">${ley}<strong>Acciones Realizadas con Mayor Frecuencia</strong><div class="chart-wrap"><canvas id="ch-m1-acc"></canvas></div></div>
-    </div>`;
-
-  setTimeout(()=>{
-    if(Object.keys(decCat).length) mkChart('ch-m1-dec','bar',Object.keys(decCat),Object.values(decCat),COLORS_STRONG);
-    if(Object.keys(accTipo).length) mkChart('ch-m1-acc','horizontalBar',Object.keys(accTipo).slice(0,8),Object.values(accTipo).slice(0,8),COLORS_STRONG);
-  },100);
+  <div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px;">
+    <div class="stat-card"><div class="stat-val">${totAbord}</div><div class="stat-lbl">Personas Abordadas</div></div>
+    <div class="stat-card"><div class="stat-val">${totDet}</div><div class="stat-lbl">Personas Detenidas</div></div>
+    <div class="stat-card"><div class="stat-val">${totCap}</div><div class="stat-lbl">Capturas Penales</div></div>
+    <div class="stat-card"><div class="stat-val">${totVeh}</div><div class="stat-lbl">Vehículos Abordados</div></div>
+    <div class="stat-card"><div class="stat-val">${datos.length}</div><div class="stat-lbl">Total Reportes</div></div>
+  </div>
+  <table class="tabla" style="width:100%;">
+    <thead><tr><th>Acción Policial</th><th style="text-align:center;">Total</th></tr></thead>
+    <tbody>${filas||'<tr><td colspan=2>Sin datos</td></tr>'}</tbody>
+  </table>`;
 }
 
 // ============================================
@@ -2643,17 +3414,13 @@ async function cargarTodosLosDatos() {
       gasGet({mod:'auditoria'}),
       gasGet({mod:'consec'}),
     ]);
-    // Normalizar campos JSON que pueden venir como strings desde Google Sheets
     D.m1 = m1.map(r => {
-      ['cuant','grupo','acciones','decomisos','docsCuant'].forEach(k => {
-        if (typeof r[k] === 'string') {
-          try { r[k] = JSON.parse(r[k]); } catch(e) {
-            r[k] = k === 'cuant' ? {} : [];
-          }
-        }
-        if (r[k] === null || r[k] === undefined) r[k] = k === 'cuant' ? {} : [];
-        // Garantizar que arrays son realmente arrays
-        if (k !== 'cuant' && !Array.isArray(r[k])) r[k] = [];
+      // Reconstruir cuant desde ap1..ap33 (columnas directas en Sheets)
+      r.cuant={};
+      AP_CAMPOS.forEach(([apId,lbl])=>{ r.cuant[lbl]=parseInt(r[apId])||0; });
+      ['grupo','acciones','decomisos'].forEach(k=>{
+        if(typeof r[k]==='string'){try{r[k]=JSON.parse(r[k]);}catch(e){r[k]=[];}}
+        if(!Array.isArray(r[k]))r[k]=[];
       });
       return r;
     });
@@ -2672,24 +3439,60 @@ async function cargarTodosLosDatos() {
 async function guardarM1() {
   const grupo=Array.from(document.querySelectorAll('#m1-grupo input:checked')).map(cb=>({n:cb.value,c:cb.dataset.c}));
   if(!grupo.length){toast('Seleccione al menos un oficial','warning');return;}
-  const cuant={};
-  CUANT_CAMPOS.forEach(([l,qid])=>{cuant[l]=parseInt(document.getElementById(qid)?.value)||0;});
-  const acciones=ACCIONES.filter(a=>document.getElementById('ach-'+a.id)?.checked).map(a=>{
-    const campos={};
-    a.campos.forEach(c=>{const el=document.getElementById(`acf-${a.id}-${c.l.replace(/\s/g,'_')}`);if(el)campos[c.l]=el.value;});
-    return{lbl:a.lbl,campos};
-  });
+
+  // Leer acciones policiales
+  const { resultado: apData, apPlano } = leerAccionesPoliciales();
+
+  // Validar ventas ambulantes: cada item debe tener sector y hora
+  if(apPlano['ap14']>0){
+    const list=document.querySelectorAll('#ap14-list .ap-detalle-item');
+    for(const d of list){
+      const n=d.id.replace('ap14-det-','');
+      const sector=document.getElementById('ap14-sector-'+n)?.value||'';
+      const hora=document.getElementById('ap14-hora-'+n)?.value||'';
+      if(!sector||!hora){toast('⚠️ Complete sector y hora en cada intervención de ventas ambulantes','warning');return;}
+    }
+  }
+
   const decomisos=[];
   document.querySelectorAll('.decomiso-item').forEach(d=>{
     const n=d.id.replace('dec-','');
-    decomisos.push({cat:document.getElementById('dc-cat-'+n)?.value,tipo:document.getElementById('dc-tipo-'+n)?.value,sub:document.getElementById('dc-sub-'+n)?.value,cant:document.getElementById('dc-cant-'+n)?.value,parte:document.getElementById('dc-parte-'+n)?.value,acta:document.getElementById('dc-acta-'+n)?.value});
+    decomisos.push({cat:document.getElementById('dc-cat-'+n)?.value||'',tipo:document.getElementById('dc-tipo-'+n)?.value||'',sub:document.getElementById('dc-sub-'+n)?.value||'',cant:document.getElementById('dc-cant-'+n)?.value||'0'});
   });
-  const payload={mod:'m1',action:'crear',fi:document.getElementById('m1-fi').value,ff:document.getElementById('m1-ff').value,hi:document.getElementById('m1-hi').value,hf:document.getElementById('m1-hf').value,movil:document.getElementById('m1-movil').value,placa:document.getElementById('m1-placa')?.value||'',area:document.getElementById('m1-area').value,supervisor:document.getElementById('m1-sup').value,colab:document.getElementById('m1-colab')?.value||'',novedades:document.getElementById('m1-novedades').value,docsObs:document.getElementById('m1-docs-obs').value,grupo,cuant,acciones,decomisos,u:UA.nombre};
+
+  // Payload: ap1..ap33 como claves directas para Google Sheets
+  const payload={
+    mod:'m1', action:'crear',
+    fi:document.getElementById('m1-fi').value,
+    ff:document.getElementById('m1-ff').value,
+    hi:document.getElementById('m1-hi').value,
+    hf:document.getElementById('m1-hf').value,
+    movil:document.getElementById('m1-movil').value,
+    placa:document.getElementById('m1-placa')?.value||'',
+    area:document.getElementById('m1-area').value,
+    supervisor:document.getElementById('m1-sup').value,
+    colab:document.getElementById('m1-colab')?.value||'',
+    novedades:document.getElementById('m1-novedades').value,
+    docsObs:document.getElementById('m1-docs-obs').value,
+    grupo:JSON.stringify(grupo),
+    acciones:JSON.stringify(apData),
+    decomisos:JSON.stringify(decomisos),
+    u:UA.nombre,
+    ...apPlano  // ap1:5, ap2:3, ... como columnas directas en Sheets
+  };
+
   try {
     const res=await gasPost(payload);
-    D.m1.unshift({...payload,id:res.id});
+    const r_local={...payload, id:res.id};
+    r_local.cuant={};
+    AP_CAMPOS.forEach(([apId,lbl])=>{ r_local.cuant[lbl]=apPlano[apId]||0; });
+    ['grupo','acciones','decomisos'].forEach(k=>{
+      if(typeof r_local[k]==='string'){try{r_local[k]=JSON.parse(r_local[k]);}catch(e){r_local[k]=[];}}
+    });
+    D.m1.unshift(r_local);
     if(res.consec){const el=document.getElementById('c-m1');if(el)el.textContent=res.consec;}
-    renderTabla('m1'); toast('✅ Reporte guardado: '+res.id); limpiarM1();
+    renderTabla('m1'); toast('✅ Reporte guardado: '+res.id);
+    limpiarM1();
   } catch(e){toast('❌ '+e.message,'danger');}
 }
 
