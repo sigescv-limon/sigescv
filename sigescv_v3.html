@@ -2142,49 +2142,48 @@ const yy=()=>new Date().getFullYear();
 
 function toast(msg,tipo='success'){const d=document.createElement('div');d.className='toast';const bg={success:'#dcfce7',danger:'#fee2e2',warning:'#fef3c7',info:'#dbeafe'};const tc={success:'#166534',danger:'#991b1b',warning:'#92400e',info:'#1e40af'};d.style.cssText=`background:${bg[tipo]||bg.info};color:${tc[tipo]||tc.info};border:1px solid ${tc[tipo]||tc.info};`;d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),4000);}
 function print2(html){
-  // Usar iframe oculto para imprimir sin mostrar ventana previa
-  const existente = document.getElementById('_print_frame');
-  if(existente) existente.remove();
+  // Inyectar contenido en un div oculto y usar CSS @media print
+  const existing = document.getElementById('_print_content');
+  if(existing) existing.remove();
 
-  const iframe = document.createElement('iframe');
-  iframe.id = '_print_frame';
-  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none;';
-  document.body.appendChild(iframe);
+  const div = document.createElement('div');
+  div.id = '_print_content';
+  div.innerHTML = html;
+  document.body.appendChild(div);
 
-  const doc = iframe.contentWindow.document;
-  doc.open();
-  doc.write(`<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<style>
-  @page{size:letter portrait;margin:2.5cm 3cm;}
-  *{box-sizing:border-box;}
-  body{font-family:Arial,sans-serif;font-size:11pt;color:#111;background:white;margin:0;padding:0;}
-  p{text-align:justify;line-height:1.7;margin:4px 0;word-break:break-word;overflow-wrap:break-word;}
-  td,th{font-size:10pt;}
-  table{width:100%;border-collapse:collapse;table-layout:fixed;word-break:break-word;}
-  td{word-break:break-word;overflow-wrap:break-word;}
-  h4{margin:8px 0 4px;font-family:Arial,sans-serif;}
-  ul{padding-left:18px;margin:4px 0 8px;}
-  li{margin-bottom:3px;text-align:justify;}
-  .no-print{display:none;}
-  @media print{
-    body{margin:0!important;}
-    button{display:none!important;}
-  }
-</style>
-</head>
-<body>
-${html}
-</body></html>`);
-  doc.close();
+  // Agregar estilos de impresión temporales
+  const styleId = '_print_style_temp';
+  const oldStyle = document.getElementById(styleId);
+  if(oldStyle) oldStyle.remove();
 
-  iframe.contentWindow.focus();
+  const style = document.createElement('style');
+  style.id = styleId;
+  style.textContent = `
+    @media print {
+      body > *:not(#_print_content) { display: none !important; }
+      #_print_content {
+        display: block !important;
+        font-family: Arial, sans-serif;
+        font-size: 11pt;
+        color: #111;
+      }
+      #_print_content p { text-align: justify; line-height: 1.7; word-break: break-word; overflow-wrap: break-word; }
+      #_print_content ul { padding-left: 18px; margin: 4px 0 8px; }
+      #_print_content li { margin-bottom: 3px; }
+      #_print_content table { width: 100%; border-collapse: collapse; }
+      @page { size: letter portrait; margin: 2.5cm 3cm; }
+    }
+    #_print_content { display: none; }
+  `;
+  document.head.appendChild(style);
+
   setTimeout(function(){
-    iframe.contentWindow.print();
-    setTimeout(function(){ iframe.remove(); }, 1000);
-  }, 500);
+    window.print();
+    setTimeout(function(){
+      div.remove();
+      style.remove();
+    }, 1000);
+  }, 300);
 }
 function noData(cols){return`<tr><td colspan="${cols}" style="text-align:center;color:#999;padding:16px;">Sin registros</td></tr>`;}
 
@@ -2214,78 +2213,73 @@ function addDecomiso(){nDec++;const cats=Object.keys(DECOMISOS);const d=document
 function updDecSubcat(n){const cat=document.getElementById('dc-cat-'+n).value;const tipoSel=document.getElementById('dc-tipo-'+n);const subSel=document.getElementById('dc-sub-'+n);const data=DECOMISOS[cat]||{};const tipos=data.tipos||[];tipoSel.innerHTML='<option value="">Seleccionar...</option>'+tipos.map(t=>`<option>${t}</option>`).join('');subSel.innerHTML='<option value="">—</option>';tipoSel.onchange=()=>{const all=[...(data.marcas||[]),(data.calibres||[]),...(data.presentaciones||[])].filter((v,i,a)=>v&&a.indexOf(v)===i);subSel.innerHTML='<option value="">—</option>'+all.map(x=>`<option>${x}</option>`).join('');};}
 
 function imprimirM1(){
-  const r = D.m1.length ? D.m1[0] : null;
-  const fi    = r?.fi    || document.getElementById('m1-fi')?.value||'';
-  const ff    = r?.ff    || document.getElementById('m1-ff')?.value||'';
-  const hi    = r?.hi    || document.getElementById('m1-hi')?.value||'';
-  const hf    = r?.hf    || document.getElementById('m1-hf')?.value||'';
-  const movil = r?.movil || document.getElementById('m1-movil')?.value||'';
-  const area  = r?.area  || document.getElementById('m1-area')?.value||'';
-  const sup   = r?.supervisor || document.getElementById('m1-sup')?.value||'';
-  const colab = r?.colab || document.getElementById('m1-colab')?.value||'';
-  const nov   = r?.novedades  || document.getElementById('m1-novedades')?.value||'';
+  // Leer siempre del DOM (formulario activo) para garantizar datos correctos
+  const fi    = document.getElementById('m1-fi')?.value||'';
+  const ff    = document.getElementById('m1-ff')?.value||'';
+  const hi    = document.getElementById('m1-hi')?.value||'';
+  const hf    = document.getElementById('m1-hf')?.value||'';
+  const movil = document.getElementById('m1-movil')?.value||'';
+  const area  = document.getElementById('m1-area')?.value||'';
+  const sup   = document.getElementById('m1-sup')?.value||'';
+  const colab = document.getElementById('m1-colab')?.value||'';
+  const nov   = document.getElementById('m1-novedades')?.value||'';
+  const docsObs = document.getElementById('m1-docs-obs')?.value||'';
   const consec= document.getElementById('c-m1')?.textContent||'';
 
-  let grupo=[];
-  if(r && Array.isArray(r.grupo)) grupo=r.grupo.map(g=>g.n||g);
-  else grupo=Array.from(document.querySelectorAll('#m1-grupo input:checked')).map(cb=>cb.value);
+  // Grupo del DOM
+  const grupo = Array.from(document.querySelectorAll('#m1-grupo input:checked')).map(cb=>cb.value);
 
-  // Leer acciones para impresión
+  // Acciones policiales del DOM
   let apItems='';
-  if(r && r.cuant && Object.keys(r.cuant).length){
-    // Desde registro guardado
-    AP_CAMPOS.forEach(([apId,lbl])=>{
-      const v=parseInt(r.cuant[lbl])||0;
-      if(v>0){
-        let det='';
-        if(r.acciones){
-          const acc=Array.isArray(r.acciones)?r.acciones.find(a=>a.lbl===lbl):r.acciones[apId];
-          if(acc?.detalle){
-            const d=acc.detalle;
-            if(d.obs) det+=` — ${d.obs}`;
-            if(d.lugares) det+=` — Lugares: ${d.lugares}`;
-            if(d.tipo) det+=` — ${d.tipo}`;
-            if(d.pres) det+=` (${d.pres})`;
-            if(d.cant) det+=` × ${d.cant}`;
-            if(d.modelo) det+=` ${d.modelo}`;
-            if(d.motivo) det+=` — ${d.motivo}`;
-            if(d.items && d.items.length){
-              det+='<ul style="margin:2px 0 0 12px;font-size:10pt;">';
-              d.items.forEach(it=>{
-                if(it.delito) det+=`<li>Delito: ${it.delito}${it.asesor?' | Asesor: '+it.asesor:''}${it.fiscal?' | Fiscal: '+it.fiscal:''}</li>`;
-                else if(it.exp) det+=`<li>Expediente: ${it.exp}${it.desp?' | Despacho: '+it.desp:''}</li>`;
-                else if(it.sector) det+=`<li>Sector: ${it.sector} — Hora: ${it.hora}</li>`;
-              });
-              det+='</ul>';
-            }
-          }
-        }
-        apItems+=`<li style="margin-bottom:4px;"><strong>${lbl}:</strong> ${v}${det}</li>`;
+  const {resultado} = leerAccionesPoliciales();
+  Object.entries(resultado).forEach(([apId,a])=>{
+    if(a.cnt>0){
+      let det='';
+      const d=a.detalle||{};
+      if(d.lugares) det+=` — Lugares: ${d.lugares}`;
+      if(d.obs) det+=` — ${d.obs}`;
+      if(d.motivo) det+=` — ${d.motivo}`;
+      if(d.tipo) det+=` — ${d.tipo}`;
+      if(d.pres) det+=` (${d.pres})`;
+      if(d.cant) det+=` × ${d.cant}`;
+      if(d.modelo) det+=` ${d.modelo}`;
+      if(d.dist) det+=` — Distrito: ${d.dist}`;
+      if(d.hora && !d.sector) det+=` — Horario: ${d.hora}`;
+      if(d.zonas) det+=` — Zonas: ${d.zonas}`;
+      if(d.ubic) det+=` — ${d.ubic}`;
+      if(d.min) det+=` — ${d.min} min`;
+      if(d.veh) det+=` — Vehículos: ${d.veh}`;
+      if(d.her) det+=` — Heridos: ${d.her}`;
+      if(d.fall) det+=` — Fallecidos: ${d.fall}`;
+      if(d.items && d.items.length){
+        det+='<ul style="margin:2px 0 2px 14px;font-size:10pt;">';
+        d.items.forEach(it=>{
+          if(it.delito) det+=`<li>Delito: ${it.delito}${it.asesor?' | Asesor: '+it.asesor:''}${it.fiscal?' | Fiscal: '+it.fiscal:''}</li>`;
+          else if(it.exp) det+=`<li>Expediente: ${it.exp}${it.desp?' | Despacho: '+it.desp:''}</li>`;
+          else if(it.sector) det+=`<li>Sector: ${it.sector} — Hora: ${it.hora}</li>`;
+        });
+        det+='</ul>';
       }
-    });
-  } else {
-    // Desde DOM (formulario activo)
-    const {resultado} = leerAccionesPoliciales();
-    Object.values(resultado).forEach(a=>{
-      if(a.cnt>0){
-        apItems+=`<li style="margin-bottom:4px;"><strong>${a.lbl}:</strong> ${a.cnt}</li>`;
-      }
-    });
-  }
+      apItems+=`<li style="margin-bottom:4px;"><strong>${a.lbl}:</strong> ${a.cnt}${det}</li>`;
+    }
+  });
 
-  if(!grupo.length && !apItems){toast('No hay datos para imprimir','warning');return;}
+  // Decomisos del DOM
+  const decItems=Array.from(document.querySelectorAll('.decomiso-item')).map(d=>{
+    const n=d.id.replace('dec-','');
+    const cat=document.getElementById('dc-cat-'+n)?.value||'';
+    const tipo=document.getElementById('dc-tipo-'+n)?.value||'';
+    const cant=document.getElementById('dc-cant-'+n)?.value||'1';
+    return cat?`<li style="margin-bottom:3px;"><strong>${cat}</strong>${tipo?' — '+tipo:''}: ${cant}</li>`:null;
+  }).filter(Boolean).join('');
 
-  const decItems = (r && Array.isArray(r.decomisos))
-    ? r.decomisos.filter(d=>d.cat).map(d=>`<li><strong>${d.cat}</strong>${d.tipo?' — '+d.tipo:''}: ${d.cant||1}</li>`).join('')
-    : '';
+  // Documentos del DOM
+  const docsItems=TIPOS_DOC.map(t=>{
+    const v=parseInt(document.getElementById(t.id)?.value)||0;
+    return v>0?`<strong>${t.l}:</strong> ${v}`:null;
+  }).filter(Boolean).join(' | ');
 
-  // Documentos realizados
-  const docsItems = TIPOS_DOC.map(t=>{
-    const v = r ? (parseInt(r.docs?.[t.l])||parseInt(r[t.id])||0)
-                : (parseInt(document.getElementById(t.id)?.value)||0);
-    return v>0 ? `<strong>${t.l}:</strong> ${v}` : null;
-  }).filter(Boolean).join(' &nbsp;|&nbsp; ');
-  const docsObs = r?.docsObs || document.getElementById('m1-docs-obs')?.value||'';
+  if(!grupo.length){toast('Seleccione al menos un oficial para imprimir','warning');return;}
 
   print2(`
   <div style="max-width:100%;font-family:Arial,sans-serif;font-size:11pt;">
@@ -2314,10 +2308,10 @@ function imprimirM1(){
     </table>
     ${grupo.length?`<p style="margin:6px 0 4px;"><strong>GRUPO DE TRABAJO:</strong></p><p style="margin:0 0 10px;">${grupo.join(' &nbsp;|&nbsp; ')}</p>`:''}
     ${apItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">ACCIONES POLICIALES REALIZADAS</p><ul style="margin:4px 0 10px;padding-left:18px;">${apItems}</ul>`:''}
-    ${colab?`<p style="margin:6px 0 2px;font-weight:700;">COLABORACIÓN A OTROS DEPARTAMENTOS</p><p style="margin:0 0 8px;text-align:justify;">${colab}</p>`:''}
+    ${colab?`<p style="margin:6px 0 2px;font-weight:700;color:#1a3a5c;">COLABORACIÓN A OTROS DEPARTAMENTOS</p><p style="margin:0 0 8px;text-align:justify;">${colab}</p>`:''}
     ${decItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">DECOMISOS</p><ul style="margin:4px 0 10px;padding-left:18px;">${decItems}</ul>`:''}
-    ${docsItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">DOCUMENTOS REALIZADOS</p><p style="margin:0 0 6px;font-size:10pt;">${docsItems}</p>`:''}
-    ${nov?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">NOVEDADES POR RANGO DE HORAS</p><p style="margin:0 0 14px;text-align:justify;line-height:1.7;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;width:100%;max-width:100%;">${nov.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`:''}
+    ${docsItems?`<p style="margin:8px 0 3px;font-weight:700;color:#1a3a5c;">DOCUMENTOS REALIZADOS</p><p style="margin:0 0 8px;font-size:10pt;">${docsItems}</p>`:''}
+    ${nov?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">NOVEDADES POR RANGO DE HORAS</p><p style="margin:0 0 14px;text-align:justify;line-height:1.7;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;">${nov.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`:''}
     <div style="margin-top:30px;display:flex;flex-wrap:wrap;gap:20px;">
       ${grupo.map(n=>`<div style="min-width:180px;flex:1;text-align:center;"><div style="height:50px;border-bottom:1px solid #333;margin-bottom:5px;"></div><div style="font-size:11pt;font-weight:600;">${n}</div><div style="font-size:9pt;color:#666;">Oficial de Policía Municipal</div></div>`).join('')}
     </div>
