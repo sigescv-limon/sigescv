@@ -2266,6 +2266,14 @@ function imprimirM1(){
     ? r.decomisos.filter(d=>d.cat).map(d=>`<li><strong>${d.cat}</strong>${d.tipo?' — '+d.tipo:''}: ${d.cant||1}</li>`).join('')
     : '';
 
+  // Documentos realizados
+  const docsItems = TIPOS_DOC.map(t=>{
+    const v = r ? (parseInt(r.docs?.[t.l])||parseInt(r[t.id])||0)
+                : (parseInt(document.getElementById(t.id)?.value)||0);
+    return v>0 ? `<strong>${t.l}:</strong> ${v}` : null;
+  }).filter(Boolean).join(' &nbsp;|&nbsp; ');
+  const docsObs = r?.docsObs || document.getElementById('m1-docs-obs')?.value||'';
+
   print2(`
   <div style="max-width:100%;font-family:Arial,sans-serif;font-size:11pt;">
     <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a3a5c;padding-bottom:10px;margin-bottom:14px;">
@@ -2295,6 +2303,7 @@ function imprimirM1(){
     ${apItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">ACCIONES POLICIALES REALIZADAS</p><ul style="margin:4px 0 10px;padding-left:18px;">${apItems}</ul>`:''}
     ${colab?`<p style="margin:6px 0 2px;font-weight:700;">COLABORACIÓN A OTROS DEPARTAMENTOS</p><p style="margin:0 0 8px;text-align:justify;">${colab}</p>`:''}
     ${decItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">DECOMISOS</p><ul style="margin:4px 0 10px;padding-left:18px;">${decItems}</ul>`:''}
+    ${docsItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">DOCUMENTOS REALIZADOS</p><p style="margin:0 0 6px;font-size:10pt;">${docsItems}</p>`:''}
     ${nov?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">NOVEDADES POR RANGO DE HORAS</p><p style="margin:0 0 14px;text-align:justify;line-height:1.7;white-space:pre-wrap;word-break:break-word;">${nov.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`:''}
     <div style="margin-top:30px;display:flex;flex-wrap:wrap;gap:20px;">
       ${grupo.map(n=>`<div style="min-width:180px;flex:1;text-align:center;"><div style="height:50px;border-bottom:1px solid #333;margin-bottom:5px;"></div><div style="font-size:11pt;font-weight:600;">${n}</div><div style="font-size:9pt;color:#666;">Oficial de Policía Municipal</div></div>`).join('')}
@@ -3425,9 +3434,12 @@ async function cargarTodosLosDatos() {
       gasGet({mod:'consec'}),
     ]);
     D.m1 = m1.map(r => {
-      // Reconstruir cuant desde ap1..ap33 (columnas directas en Sheets)
+      // Reconstruir cuant desde ap1..ap33
       r.cuant={};
       AP_CAMPOS.forEach(([apId,lbl])=>{ r.cuant[lbl]=parseInt(r[apId])||0; });
+      // Reconstruir docs desde td1..td10
+      r.docs={};
+      TIPOS_DOC.forEach(t=>{ r.docs[t.l]=parseInt(r[t.id])||0; });
       ['grupo','acciones','decomisos'].forEach(k=>{
         if(typeof r[k]==='string'){try{r[k]=JSON.parse(r[k]);}catch(e){r[k]=[];}}
         if(!Array.isArray(r[k]))r[k]=[];
@@ -3470,6 +3482,12 @@ async function guardarM1() {
     decomisos.push({cat:document.getElementById('dc-cat-'+n)?.value||'',tipo:document.getElementById('dc-tipo-'+n)?.value||'',sub:document.getElementById('dc-sub-'+n)?.value||'',cant:document.getElementById('dc-cant-'+n)?.value||'0'});
   });
 
+  // Documentos realizados: td1..td10 como claves directas
+  const docsPlano={};
+  TIPOS_DOC.forEach(t=>{
+    docsPlano[t.id]=parseInt(document.getElementById(t.id)?.value)||0;
+  });
+
   // Payload: ap1..ap33 como claves directas para Google Sheets
   const payload={
     mod:'m1', action:'crear',
@@ -3488,13 +3506,16 @@ async function guardarM1() {
     acciones:JSON.stringify(apData),
     decomisos:JSON.stringify(decomisos),
     u:UA.nombre,
-    ...apPlano  // ap1:5, ap2:3, ... como columnas directas en Sheets
+    ...apPlano,  // ap1..ap33 como columnas directas en Sheets
+    ...docsPlano  // td1..td10 como columnas directas en Sheets
   };
 
   try {
     const res=await gasPost(payload);
     const r_local={...payload, id:res.id};
     r_local.cuant={};
+    r_local.docs={};
+    TIPOS_DOC.forEach(t=>{ r_local.docs[t.l]=docsPlano[t.id]||0; });
     AP_CAMPOS.forEach(([apId,lbl])=>{ r_local.cuant[lbl]=apPlano[apId]||0; });
     ['grupo','acciones','decomisos'].forEach(k=>{
       if(typeof r_local[k]==='string'){try{r_local[k]=JSON.parse(r_local[k]);}catch(e){r_local[k]=[];}}
@@ -3689,31 +3710,4 @@ async function ejecutarEliminacion() {
 }
 
 function descargarBackup() {
-  const backup={version:'2.0',fecha:new Date().toISOString(),datos:D,consecutivos:C,usuarios:USUARIOS};
-  const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;a.download=`SIGESCV_backup_${new Date().toISOString().split('T')[0]}.json`;
-  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-  toast('✅ Respaldo descargado');
-}
-
-function audit(accion,modulo,detalle){} // Auditoría se registra en el servidor
-
-async function guardarCfg() {
-  const cfg={};
-  [['cfg-c1','m1'],['cfg-c2','m2'],['cfg-c3','m3a'],['cfg-c4','m4'],['cfg-c7','m7']].forEach(([id,mod])=>{const el=document.getElementById(id);if(el)cfg[mod]=parseInt(el.value)||1;});
-  try {
-    await gasPost({mod:'consec',action:'set',...cfg});
-    C={...C,...cfg}; updConsec(); toast('✅ Configuración guardada');
-  } catch(e){toast('❌ '+e.message,'danger');}
-}
-
-function save(){}
-
-document.getElementById('lp')?.addEventListener('keydown',e=>{if(e.key==='Enter')login();});
-
-</script>
-
-</body>
-</html>
+  const backup={version:'2.0',fecha:new Date().toISOString(),datos:D,consecutivos:C,
