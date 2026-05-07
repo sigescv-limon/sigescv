@@ -3387,11 +3387,15 @@ async function login() {
     document.getElementById('login-error').style.display='none';
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='block';
-    setupUI();
+    try { setupUI(); } catch(err) { console.error('setupUI error:', err); }
     await cargarTodosLosDatos();
   } catch(e) {
-    document.getElementById('login-error').style.display='block';
-    console.error('Login error:', e.message);
+    const errEl = document.getElementById('login-error');
+    if(errEl) {
+      errEl.style.display='block';
+      errEl.textContent = e.message || 'Error de autenticación';
+    }
+    console.error('Login error:', e.message, e.stack);
   }
 }
 
@@ -3457,7 +3461,7 @@ async function cargarTodosLosDatos() {
     D.m7hist[histAnio]=await gasGet({mod:'m7',action:'historico',anio:histAnio}).catch(()=>({}));
     updConsec(); renderAll();
     toast('✅ Sistema listo');
-  } catch(e) { toast('❌ Error cargando datos: '+e.message,'danger'); }
+  } catch(e) { console.error('cargarDatos error:', e.message, e.stack); toast('❌ Error: '+e.message,'danger'); }
 }
 
 // ── GUARDAR M1 ────────────────────────────────────────────────
@@ -3701,10 +3705,4 @@ async function ejecutarEliminacion() {
   if(!pendingDel)return;
   try {
     if(pendingDel.tipo==='total-reset'||pendingDel.tipo==='todo'){
-      await gasPost({mod:'reset',action:'total'});
-    } else if(pendingDel.mods){
-      await gasPost({mod:'reset',action:'modulo',mods:pendingDel.mods});
-    }
-    await cargarTodosLosDatos();
-    toast('✅ Registros eliminados','warning');
-  } catch(e){to
+      await gasPost({mod:'reset
