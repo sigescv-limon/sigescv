@@ -831,9 +831,19 @@ tbody td{padding:8px 11px;}
       </div>
     </div>
   </div>
-  <div class="form-field" style="margin:10px 0;">
-    <label style="font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;color:var(--azul);text-transform:uppercase;">COLABORACIÓN A OTROS DEPARTAMENTOS</label>
-    <textarea id="m1-colab" rows="2" placeholder="Detalle las colaboraciones realizadas..."></textarea>
+  <div class="accion-policial" id="ap-item-ap13">
+    <div class="ap-header" onclick="toggleAP('ap13')">
+      <input type="checkbox" id="ap-cb-ap13" onchange="toggleAP('ap13')">
+      <span class="ap-label">COLABORACIÓN A OTROS DEPARTAMENTOS</span>
+      <input type="number" id="ap-cnt-ap13" class="ap-cnt" min="0" value="0"
+             onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+    </div>
+    <div class="ap-body" id="ap-body-ap13" style="display:none;">
+      <div class="form-field">
+        <label>Detalle de la colaboración</label>
+        <textarea id="m1-colab" rows="2" placeholder="Detalle las colaboraciones realizadas..."></textarea>
+      </div>
+    </div>
   </div>
   <div class="accion-policial" id="ap-item-ap14">
     <div class="ap-header" onclick="toggleAP('ap14')">
@@ -847,7 +857,7 @@ tbody td{padding:8px 11px;}
       <button class="btn btn-secondary btn-sm" onclick="addDetalle('ap14','venta_ambulante')">+ Agregar Intervención</button>
     </div>
   </div>
-<div class="sec-titulo" style="margin-top:16px;">🔵 TIPOS DE ACCIONES REALIZADAS</div>
+
   <div class="accion-policial" id="ap-item-ap15">
     <div class="ap-header" onclick="toggleAP('ap15')">
       <input type="checkbox" id="ap-cb-ap15" onchange="toggleAP('ap15')">
@@ -1840,7 +1850,7 @@ const CUANT_CAMPOS=[["Control de Carreteras","q1"],["Personas Abordadas","q2"],[
 
 // ── CONSTANTES ACCIONES POLICIALES ───────────────────────────
 const AP_CAMPOS = [["ap1", "CONTROL DE CARRETERA"], ["ap2", "PERSONAS ABORDADAS"], ["ap3", "PERSONAS INVESTIGADAS ECU-OIJ"], ["ap4", "VEHÍCULOS ABORDADOS"], ["ap5", "VEHÍCULOS INVESTIGADOS ECU-OIJ"], ["ap6", "MOTOCICLETAS ABORDADAS"], ["ap7", "MOTOCICLETAS INVESTIGADAS ECU-OIJ"], ["ap8", "PERSONAS DETENIDAS"], ["ap9", "CAPTURAS PENALES"], ["ap10", "CAPTURAS POR PENSIÓN ALIMENTARIA"], ["ap11", "ÓRDENES DE PRESENTACIÓN"], ["ap12", "PERSONAS RESEÑADAS"], ["ap14", "INTERVENCIÓN DE VENTAS AMBULANTES"], ["ap15", "RECUPERACIÓN DE VEHÍCULO ROBADO"], ["ap16", "COLISIÓN SIN HERIDOS"], ["ap17", "COLISIÓN CON HERIDOS Y/O FALLECIDOS"], ["ap18", "OPERATIVO DE TRÁNSITO"], ["ap19", "DROGA DECOMISADA"], ["ap20", "DROGA HALLADA"], ["ap21", "DECOMISO DE ARMAS"], ["ap22", "DECOMISO DE VENTAS ILEGALES"], ["ap23", "CLAUSURA DE LOCAL COMERCIAL"], ["ap24", "CLAUSURA DE SITIO CLANDESTINO"], ["ap25", "DISTURBIO Y/O RIÑAS"], ["ap26", "ATENCIÓN A CENTRO EDUCATIVO"], ["ap27", "TRASLADO DE HERIDOS A CENTRO MÉDICO"], ["ap28", "AYUDA A CIUDADANO"], ["ap29", "MENORES EN RIESGO SOCIAL"], ["ap30", "HALLAZGO DE CADÁVER"], ["ap31", "LICOR DECOMISADO"], ["ap32", "REGULACIÓN DE TRÁNSITO"], ["ap33", "PATRULLAJE PREVENTIVO"]];
-const AP_IDS = ["ap1", "ap2", "ap3", "ap4", "ap5", "ap6", "ap7", "ap8", "ap9", "ap10", "ap11", "ap12", "ap14", "ap15", "ap16", "ap17", "ap18", "ap19", "ap20", "ap21", "ap22", "ap23", "ap24", "ap25", "ap26", "ap27", "ap28", "ap29", "ap30", "ap31", "ap32", "ap33"];
+const AP_IDS = ["ap1", "ap2", "ap3", "ap4", "ap5", "ap6", "ap7", "ap8", "ap9", "ap10", "ap11", "ap12", "ap13","ap14", "ap15", "ap16", "ap17", "ap18", "ap19", "ap20", "ap21", "ap22", "ap23", "ap24", "ap25", "ap26", "ap27", "ap28", "ap29", "ap30", "ap31", "ap32", "ap33"];
 const AP_AUTO = ["ap8", "ap9", "ap10", "ap11", "ap14"];
 const AP_CONTADORES = {};  // id → contador de items
 
