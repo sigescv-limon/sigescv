@@ -2142,8 +2142,18 @@ const yy=()=>new Date().getFullYear();
 
 function toast(msg,tipo='success'){const d=document.createElement('div');d.className='toast';const bg={success:'#dcfce7',danger:'#fee2e2',warning:'#fef3c7',info:'#dbeafe'};const tc={success:'#166534',danger:'#991b1b',warning:'#92400e',info:'#1e40af'};d.style.cssText=`background:${bg[tipo]||bg.info};color:${tc[tipo]||tc.info};border:1px solid ${tc[tipo]||tc.info};`;d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),4000);}
 function print2(html){
-  const w=window.open('','_blank','width=900,height=700');
-  w.document.write(`<!DOCTYPE html>
+  // Usar iframe oculto para imprimir sin mostrar ventana previa
+  const existente = document.getElementById('_print_frame');
+  if(existente) existente.remove();
+
+  const iframe = document.createElement('iframe');
+  iframe.id = '_print_frame';
+  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none;';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(`<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -2151,11 +2161,13 @@ function print2(html){
   @page{size:letter portrait;margin:2.5cm 3cm;}
   *{box-sizing:border-box;}
   body{font-family:Arial,sans-serif;font-size:11pt;color:#111;background:white;margin:0;padding:0;}
-  p{text-align:justify;line-height:1.6;margin:4px 0;}
+  p{text-align:justify;line-height:1.7;margin:4px 0;word-break:break-word;overflow-wrap:break-word;}
   td,th{font-size:10pt;}
   table{width:100%;border-collapse:collapse;table-layout:fixed;word-break:break-word;}
   td{word-break:break-word;overflow-wrap:break-word;}
   h4{margin:8px 0 4px;font-family:Arial,sans-serif;}
+  ul{padding-left:18px;margin:4px 0 8px;}
+  li{margin-bottom:3px;text-align:justify;}
   .no-print{display:none;}
   @media print{
     body{margin:0!important;}
@@ -2165,13 +2177,14 @@ function print2(html){
 </head>
 <body>
 ${html}
-<'+'script>
-  window.onload=function(){
-    setTimeout(function(){window.print();},400);
-  };
-<'+'/script>
 </body></html>`);
-  w.document.close();
+  doc.close();
+
+  iframe.contentWindow.focus();
+  setTimeout(function(){
+    iframe.contentWindow.print();
+    setTimeout(function(){ iframe.remove(); }, 1000);
+  }, 500);
 }
 function noData(cols){return`<tr><td colspan="${cols}" style="text-align:center;color:#999;padding:16px;">Sin registros</td></tr>`;}
 
@@ -2304,7 +2317,7 @@ function imprimirM1(){
     ${colab?`<p style="margin:6px 0 2px;font-weight:700;">COLABORACIÓN A OTROS DEPARTAMENTOS</p><p style="margin:0 0 8px;text-align:justify;">${colab}</p>`:''}
     ${decItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">DECOMISOS</p><ul style="margin:4px 0 10px;padding-left:18px;">${decItems}</ul>`:''}
     ${docsItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">DOCUMENTOS REALIZADOS</p><p style="margin:0 0 6px;font-size:10pt;">${docsItems}</p>`:''}
-    ${nov?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">NOVEDADES POR RANGO DE HORAS</p><p style="margin:0 0 14px;text-align:justify;line-height:1.7;white-space:pre-wrap;word-break:break-word;">${nov.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`:''}
+    ${nov?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">NOVEDADES POR RANGO DE HORAS</p><p style="margin:0 0 14px;text-align:justify;line-height:1.7;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;width:100%;max-width:100%;">${nov.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`:''}
     <div style="margin-top:30px;display:flex;flex-wrap:wrap;gap:20px;">
       ${grupo.map(n=>`<div style="min-width:180px;flex:1;text-align:center;"><div style="height:50px;border-bottom:1px solid #333;margin-bottom:5px;"></div><div style="font-size:11pt;font-weight:600;">${n}</div><div style="font-size:9pt;color:#666;">Oficial de Policía Municipal</div></div>`).join('')}
     </div>
