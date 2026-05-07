@@ -2165,11 +2165,11 @@ function print2(html){
 </head>
 <body>
 ${html}
-<script>
+<'+'script>
   window.onload=function(){
     setTimeout(function(){window.print();},400);
   };
-<\/script>
+<'+'/script>
 </body></html>`);
   w.document.close();
 }
@@ -3710,4 +3710,4 @@ async function ejecutarEliminacion() {
 }
 
 function descargarBackup() {
-  const backup={version:'2.0',fecha:new Date().toISOString(),datos:D,consecutivos:C,
+  const backup={version:'2.0',fecha:new Date().toISOString(),datos:D,consecutiv
