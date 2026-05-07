@@ -2213,73 +2213,73 @@ function addDecomiso(){nDec++;const cats=Object.keys(DECOMISOS);const d=document
 function updDecSubcat(n){const cat=document.getElementById('dc-cat-'+n).value;const tipoSel=document.getElementById('dc-tipo-'+n);const subSel=document.getElementById('dc-sub-'+n);const data=DECOMISOS[cat]||{};const tipos=data.tipos||[];tipoSel.innerHTML='<option value="">Seleccionar...</option>'+tipos.map(t=>`<option>${t}</option>`).join('');subSel.innerHTML='<option value="">—</option>';tipoSel.onchange=()=>{const all=[...(data.marcas||[]),(data.calibres||[]),...(data.presentaciones||[])].filter((v,i,a)=>v&&a.indexOf(v)===i);subSel.innerHTML='<option value="">—</option>'+all.map(x=>`<option>${x}</option>`).join('');};}
 
 function imprimirM1(){
-  // Leer siempre del DOM (formulario activo) para garantizar datos correctos
-  const fi    = document.getElementById('m1-fi')?.value||'';
-  const ff    = document.getElementById('m1-ff')?.value||'';
-  const hi    = document.getElementById('m1-hi')?.value||'';
-  const hf    = document.getElementById('m1-hf')?.value||'';
-  const movil = document.getElementById('m1-movil')?.value||'';
-  const area  = document.getElementById('m1-area')?.value||'';
-  const sup   = document.getElementById('m1-sup')?.value||'';
-  const colab = document.getElementById('m1-colab')?.value||'';
-  const nov   = document.getElementById('m1-novedades')?.value||'';
-  const docsObs = document.getElementById('m1-docs-obs')?.value||'';
-  const consec= document.getElementById('c-m1')?.textContent||'';
+  // Leer del último registro guardado
+  const r = D.m1.length ? D.m1[0] : null;
+  if(!r){ toast('Primero guarde el reporte antes de imprimir','warning'); return; }
 
-  // Grupo del DOM
-  const grupo = Array.from(document.querySelectorAll('#m1-grupo input:checked')).map(cb=>cb.value);
+  // Datos generales
+  const fi=r.fi||'', ff=r.ff||'', hi=r.hi||'', hf=r.hf||'';
+  const movil=r.movil||'', area=r.area||'', sup=r.supervisor||'';
+  const colab=r.colab||'', nov=r.novedades||'', docsObs=r.docsObs||'';
+  const consec=document.getElementById('c-m1')?.textContent||r.id||'';
 
-  // Acciones policiales del DOM
+  // Grupo
+  const grupo = Array.isArray(r.grupo) ? r.grupo.map(g=>g.n||g) : [];
+
+  // Acciones policiales desde cuant + acciones del registro
   let apItems='';
-  const {resultado} = leerAccionesPoliciales();
-  Object.entries(resultado).forEach(([apId,a])=>{
-    if(a.cnt>0){
+  AP_CAMPOS.forEach(([apId,lbl])=>{
+    const v = parseInt(r.cuant?.[lbl]) || parseInt(r[apId]) || 0;
+    if(v>0){
       let det='';
-      const d=a.detalle||{};
-      if(d.lugares) det+=` — Lugares: ${d.lugares}`;
-      if(d.obs) det+=` — ${d.obs}`;
-      if(d.motivo) det+=` — ${d.motivo}`;
-      if(d.tipo) det+=` — ${d.tipo}`;
-      if(d.pres) det+=` (${d.pres})`;
-      if(d.cant) det+=` × ${d.cant}`;
-      if(d.modelo) det+=` ${d.modelo}`;
-      if(d.dist) det+=` — Distrito: ${d.dist}`;
-      if(d.hora && !d.sector) det+=` — Horario: ${d.hora}`;
-      if(d.zonas) det+=` — Zonas: ${d.zonas}`;
-      if(d.ubic) det+=` — ${d.ubic}`;
-      if(d.min) det+=` — ${d.min} min`;
-      if(d.veh) det+=` — Vehículos: ${d.veh}`;
-      if(d.her) det+=` — Heridos: ${d.her}`;
-      if(d.fall) det+=` — Fallecidos: ${d.fall}`;
-      if(d.items && d.items.length){
-        det+='<ul style="margin:2px 0 2px 14px;font-size:10pt;">';
-        d.items.forEach(it=>{
-          if(it.delito) det+=`<li>Delito: ${it.delito}${it.asesor?' | Asesor: '+it.asesor:''}${it.fiscal?' | Fiscal: '+it.fiscal:''}</li>`;
-          else if(it.exp) det+=`<li>Expediente: ${it.exp}${it.desp?' | Despacho: '+it.desp:''}</li>`;
-          else if(it.sector) det+=`<li>Sector: ${it.sector} — Hora: ${it.hora}</li>`;
-        });
-        det+='</ul>';
+      // Buscar detalle en r.acciones
+      let accData = null;
+      if(r.acciones){
+        if(Array.isArray(r.acciones)){
+          const found = r.acciones.find(a=>a.lbl===lbl || a.lbl===apId);
+          if(found) accData = found.detalle || found.campos || null;
+        } else if(typeof r.acciones==='object'){
+          accData = r.acciones[apId]?.detalle || r.acciones[apId]?.campos || null;
+        }
       }
-      apItems+=`<li style="margin-bottom:4px;"><strong>${a.lbl}:</strong> ${a.cnt}${det}</li>`;
+      if(accData){
+        const d = accData;
+        if(d.lugares) det+=` — Lugares: ${d.lugares}`;
+        if(d.obs) det+=` — ${d.obs}`;
+        if(d.motivo) det+=` — ${d.motivo}`;
+        if(d.tipo) det+=` — ${d.tipo}`;
+        if(d.pres) det+=` (${d.pres})`;
+        if(d.cant) det+=` × ${d.cant}`;
+        if(d.modelo) det+=` ${d.modelo}`;
+        if(d.dist) det+=` — ${d.dist}`;
+        if(d.hora && !d.sector) det+=` — ${d.hora}`;
+        if(d.zonas) det+=` — ${d.zonas}`;
+        if(d.ubic) det+=` — ${d.ubic}`;
+        if(d.min) det+=` — ${d.min} min`;
+        if(d.items && d.items.length){
+          det+='<ul style="margin:2px 0 2px 14px;font-size:10pt;">';
+          d.items.forEach(it=>{
+            if(it.delito) det+=`<li>Delito: ${it.delito}${it.asesor?' | Asesor: '+it.asesor:''}${it.fiscal?' | Fiscal: '+it.fiscal:''}</li>`;
+            else if(it.exp) det+=`<li>Exp: ${it.exp}${it.desp?' | '+it.desp:''}</li>`;
+            else if(it.sector) det+=`<li>${it.sector} — ${it.hora}</li>`;
+          });
+          det+='</ul>';
+        }
+      }
+      apItems+=`<li style="margin-bottom:4px;"><strong>${lbl}:</strong> ${v}${det}</li>`;
     }
   });
 
-  // Decomisos del DOM
-  const decItems=Array.from(document.querySelectorAll('.decomiso-item')).map(d=>{
-    const n=d.id.replace('dec-','');
-    const cat=document.getElementById('dc-cat-'+n)?.value||'';
-    const tipo=document.getElementById('dc-tipo-'+n)?.value||'';
-    const cant=document.getElementById('dc-cant-'+n)?.value||'1';
-    return cat?`<li style="margin-bottom:3px;"><strong>${cat}</strong>${tipo?' — '+tipo:''}: ${cant}</li>`:null;
-  }).filter(Boolean).join('');
+  // Decomisos
+  const decItems = Array.isArray(r.decomisos)
+    ? r.decomisos.filter(d=>d.cat).map(d=>`<li><strong>${d.cat}</strong>${d.tipo?' — '+d.tipo:''}: ${d.cant||1}</li>`).join('')
+    : '';
 
-  // Documentos del DOM
-  const docsItems=TIPOS_DOC.map(t=>{
-    const v=parseInt(document.getElementById(t.id)?.value)||0;
+  // Documentos
+  const docsItems = TIPOS_DOC.map(t=>{
+    const v = parseInt(r.docs?.[t.l]) || parseInt(r[t.id]) || 0;
     return v>0?`<strong>${t.l}:</strong> ${v}`:null;
   }).filter(Boolean).join(' | ');
-
-  if(!grupo.length){toast('Seleccione al menos un oficial para imprimir','warning');return;}
 
   print2(`
   <div style="max-width:100%;font-family:Arial,sans-serif;font-size:11pt;">
@@ -2310,7 +2310,7 @@ function imprimirM1(){
     ${apItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">ACCIONES POLICIALES REALIZADAS</p><ul style="margin:4px 0 10px;padding-left:18px;">${apItems}</ul>`:''}
     ${colab?`<p style="margin:6px 0 2px;font-weight:700;color:#1a3a5c;">COLABORACIÓN A OTROS DEPARTAMENTOS</p><p style="margin:0 0 8px;text-align:justify;">${colab}</p>`:''}
     ${decItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">DECOMISOS</p><ul style="margin:4px 0 10px;padding-left:18px;">${decItems}</ul>`:''}
-    ${docsItems?`<p style="margin:8px 0 3px;font-weight:700;color:#1a3a5c;">DOCUMENTOS REALIZADOS</p><p style="margin:0 0 8px;font-size:10pt;">${docsItems}</p>`:''}
+    ${docsItems?`<p style="margin:8px 0 3px;font-weight:700;color:#1a3a5c;">DOCUMENTOS REALIZADOS</p><p style="margin:0 0 8px;font-size:10pt;">${docsItems}</p>${docsObs?`<p style="font-size:10pt;color:#555;margin:0 0 8px;">${docsObs}</p>`:''}`:''}
     ${nov?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">NOVEDADES POR RANGO DE HORAS</p><p style="margin:0 0 14px;text-align:justify;line-height:1.7;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;">${nov.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`:''}
     <div style="margin-top:30px;display:flex;flex-wrap:wrap;gap:20px;">
       ${grupo.map(n=>`<div style="min-width:180px;flex:1;text-align:center;"><div style="height:50px;border-bottom:1px solid #333;margin-bottom:5px;"></div><div style="font-size:11pt;font-weight:600;">${n}</div><div style="font-size:9pt;color:#666;">Oficial de Policía Municipal</div></div>`).join('')}
