@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="version" content="3.0-NUEVO-20260507084103">
+<meta name="version" content="3.1-202605080442">
 <title>SIGESCV v2.0 — Policía Municipal de Limón</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -2282,16 +2282,98 @@ function imprimirM1(){
     <div style="text-align:center;margin-top:18px;font-size:9pt;color:#999;border-top:1px solid #ddd;padding-top:6px;">"Limón Ciudad de la Vida" · ${consec}</div>
   </div>`);
 }
+
+function imprimirM1Reg(id){
+  const r=D.m1.find(x=>String(x.id)===String(id));
+  if(!r){toast('Reporte no encontrado','danger');return;}
+  // Cargar en D.m1[0] temporalmente y usar imprimirM1 con datos del registro
+  const grupo=Array.isArray(r.grupo)?r.grupo.map(g=>g.n||g):[];
+  const consec=r.id||'';
+  let apItems='';
+  AP_CAMPOS.forEach(([apId,lbl])=>{
+    const v=parseInt(r.cuant?.[lbl])||parseInt(r[apId])||0;
+    if(v>0) apItems+=`<li style="margin-bottom:4px;"><strong>${lbl}:</strong> ${v}</li>`;
+  });
+  const decItems=Array.isArray(r.decomisos)?r.decomisos.filter(d=>d.cat).map(d=>`<li><strong>${d.cat}</strong>${d.tipo?' — '+d.tipo:''}: ${d.cant||1}</li>`).join(''):'';
+  const docsItems=TIPOS_DOC.map(t=>{const v=parseInt(r.docs?.[t.l])||parseInt(r[t.id])||0;return v>0?`<strong>${t.l}:</strong> ${v}`:null;}).filter(Boolean).join(' | ');
+  const colab=r.colab||'';
+  const nov=r.novedades||'';
+  print2(`<div style="max-width:100%;font-family:Arial,sans-serif;font-size:11pt;">
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a3a5c;padding-bottom:10px;margin-bottom:14px;">
+      <img src="${I_PML}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
+      <div style="text-align:center;flex:1;padding:0 10px;">
+        <div style="font-weight:700;font-size:13pt;color:#1a3a5c;">MUNICIPALIDAD DEL CANTÓN CENTRAL DE LIMÓN</div>
+        <div>Policía Municipal de Limón</div>
+        <div style="font-weight:700;font-size:12pt;margin-top:4px;">REPORTE DIARIO DE LABORES</div>
+        <div style="font-size:10pt;color:#555;">${consec}</div>
+      </div>
+      <img src="${I_MUNI}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+      <tr>
+        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>F. Inicio:</strong> ${r.fi||''}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>F. Fin:</strong> ${r.ff||''}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>H. Inicio:</strong> ${r.hi||''}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>H. Fin:</strong> ${r.hf||''}</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 6px;border:1px solid #ddd;"><strong>Móvil:</strong> ${r.movil||''}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;" colspan="2"><strong>Área:</strong> ${r.area||''}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;"><strong>Supervisor:</strong> ${r.supervisor||''}</td>
+      </tr>
+    </table>
+    ${grupo.length?`<p style="margin:6px 0 4px;"><strong>GRUPO DE TRABAJO:</strong></p><p style="margin:0 0 10px;">${grupo.join(' &nbsp;|&nbsp; ')}</p>`:''}
+    ${apItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">ACCIONES POLICIALES REALIZADAS</p><ul style="margin:4px 0 10px;padding-left:18px;">${apItems}</ul>`:''}
+    ${colab?`<p style="margin:6px 0 2px;font-weight:700;color:#1a3a5c;">COLABORACIÓN A OTROS DEPARTAMENTOS</p><p style="margin:0 0 8px;text-align:justify;">${colab}</p>`:''}
+    ${decItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">DECOMISOS</p><ul style="margin:4px 0 10px;padding-left:18px;">${decItems}</ul>`:''}
+    ${docsItems?`<p style="margin:8px 0 3px;font-weight:700;color:#1a3a5c;">DOCUMENTOS REALIZADOS</p><p style="margin:0 0 8px;font-size:10pt;">${docsItems}</p>`:''}
+    ${nov?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">NOVEDADES POR RANGO DE HORAS</p><p style="margin:0 0 14px;text-align:justify;line-height:1.7;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;">${nov.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`:''}
+    <div style="margin-top:30px;display:flex;flex-wrap:wrap;gap:20px;">
+      ${grupo.map(n=>`<div style="min-width:180px;flex:1;text-align:center;"><div style="height:50px;border-bottom:1px solid #333;margin-bottom:5px;"></div><div style="font-size:11pt;font-weight:600;">${n}</div><div style="font-size:9pt;color:#666;">Oficial de Policía Municipal</div></div>`).join('')}
+    </div>
+    <div style="text-align:center;margin-top:18px;font-size:9pt;color:#999;border-top:1px solid #ddd;padding-top:6px;">"Limón Ciudad de la Vida" · ${consec}</div>
+  </div>`);
+}
+
+function editarM1(id){
+  const r=D.m1.find(x=>String(x.id)===String(id));
+  if(!r){toast('Reporte no encontrado','danger');return;}
+  const setV=(elId,val)=>{const e=document.getElementById(elId);if(e)e.value=val||'';};
+  setV('m1-fi',r.fi); setV('m1-ff',r.ff);
+  setV('m1-hi',r.hi); setV('m1-hf',r.hf);
+  setV('m1-movil',r.movil); setV('m1-area',r.area);
+  setV('m1-sup',r.supervisor); setV('m1-novedades',r.novedades);
+  setV('m1-colab',r.colab); setV('m1-docs-obs',r.docsObs);
+  // Marcar grupo
+  document.querySelectorAll('#m1-grupo input[type="checkbox"]').forEach(cb=>{
+    cb.checked=(r.grupo||[]).some(g=>(g.n||g)===cb.value);
+  });
+  // Cargar docs
+  TIPOS_DOC.forEach(t=>{const e=document.getElementById(t.id);if(e)e.value=r[t.id]||r.docs?.[t.l]||0;});
+  window._editandoM1=id;
+  navTo('m1');
+  const tab=document.querySelector('[onclick*="wf-mod1-nuevo"]');
+  if(tab)tab.click();
+  toast('Reporte cargado para edición','warning');
+}
+
+async function eliminarM1(id){
+  if(!confirm('¿Eliminar este reporte? Esta acción no se puede deshacer.')) return;
+  try {
+    await gasPost({mod:'m1',action:'eliminar',id});
+    D.m1=D.m1.filter(x=>String(x.id)!==String(id));
+    renderTabla('m1');
+    toast('Reporte eliminado','warning');
+  } catch(e){toast('Error: '+e.message,'danger');}
+}
 function limpiarM1(){
   const cont=document.getElementById('wf-mod1-nuevo');
   if(cont){
-    cont.querySelectorAll('input').forEach(el=>{
-      if(el.type==='checkbox') el.checked=false;
+    cont.querySelectorAll('input,select,textarea').forEach(el=>{
+      if(el.type==='checkbox'||el.type==='radio') el.checked=false;
       else if(el.type==='number') el.value='0';
       else el.value='';
     });
-    cont.querySelectorAll('select').forEach(el=>el.value='');
-    cont.querySelectorAll('textarea').forEach(el=>el.value='');
   }
   TIPOS_DOC.forEach(t=>{const e=document.getElementById(t.id);if(e)e.value=0;});
   const decList=document.getElementById('m1-decomisos-list');
@@ -2316,13 +2398,11 @@ function getPersonas(tipo,max){const arr=[];for(let i=1;i<=max;i++){const pref=`
 function limpiarM2(){
   const cont=document.getElementById('wf-mod2-nuevo');
   if(cont){
-    cont.querySelectorAll('input').forEach(el=>{
-      if(el.type==='checkbox') el.checked=false;
+    cont.querySelectorAll('input,select,textarea').forEach(el=>{
+      if(el.type==='checkbox'||el.type==='radio') el.checked=false;
       else if(el.type==='number') el.value='0';
       else el.value='';
     });
-    cont.querySelectorAll('select').forEach(el=>el.value='');
-    cont.querySelectorAll('textarea').forEach(el=>el.value='');
   }
   ['m2-imputados','m2-ofendidos','m2-asistentes','m2-docs'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.innerHTML='';
@@ -2460,13 +2540,11 @@ async function eliminarBitacora(id){
 function limpiarBitacora(){
   const cont=document.getElementById('wf-mod3-bitacora');
   if(cont){
-    cont.querySelectorAll('input').forEach(el=>{
-      if(el.type==='checkbox') el.checked=false;
+    cont.querySelectorAll('input,select,textarea').forEach(el=>{
+      if(el.type==='checkbox'||el.type==='radio') el.checked=false;
       else if(el.type==='number') el.value='0';
       else el.value='';
     });
-    cont.querySelectorAll('select').forEach(el=>el.value='');
-    cont.querySelectorAll('textarea').forEach(el=>el.value='');
   }
   const incList=document.getElementById('m3a-incidentes');
   if(incList){incList.innerHTML='';nInc=0;}
@@ -2490,16 +2568,13 @@ function imprimirLlamados(){const horas=HORAS_T[document.getElementById('m3c-tur
 function limpiarLlamados(){
   const cont=document.getElementById('wf-mod3-llamados');
   if(cont){
-    cont.querySelectorAll('input').forEach(el=>{
-      if(el.type==='checkbox') el.checked=false;
+    cont.querySelectorAll('input,select,textarea').forEach(el=>{
+      if(el.type==='checkbox'||el.type==='radio') el.checked=false;
       else if(el.type==='number') el.value='0';
       else el.value='';
     });
-    cont.querySelectorAll('select').forEach(el=>el.value='');
-    cont.querySelectorAll('textarea').forEach(el=>el.value='');
   }
   ['m3c-fi','m3c-ff'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=hoy();});
-  ['m3c-turno','m3c-op'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   initTablaGuardas();
   const met=document.getElementById('metricas-guardas');
   if(met)met.innerHTML='';
@@ -2514,13 +2589,11 @@ function editarM4(id){const r=D.m4.find(x=>x.id===id);if(!r)return;editingM4=id;
 function limpiarM4(){
   const cont=document.getElementById('wf-mod4-nuevo');
   if(cont){
-    cont.querySelectorAll('input').forEach(el=>{
-      if(el.type==='checkbox') el.checked=false;
+    cont.querySelectorAll('input,select,textarea').forEach(el=>{
+      if(el.type==='checkbox'||el.type==='radio') el.checked=false;
       else if(el.type==='number') el.value='0';
       else el.value='';
     });
-    cont.querySelectorAll('select').forEach(el=>el.value='');
-    cont.querySelectorAll('textarea').forEach(el=>el.value='');
   }
 }
 function renderStatsM4(){const cont=document.getElementById('stats-m4');if(!cont||!D.m4.length){if(cont)cont.innerHTML='<div class="alert alert-info">Sin datos registrados.</div>';return;}const total=D.m4.reduce((s,r)=>s+r.est,0);const porProg={},porNivel={},porCentro={};D.m4.forEach(r=>{porProg[r.prog]=(porProg[r.prog]||0)+r.est;porNivel[r.nivel]=(porNivel[r.nivel]||0)+r.est;porCentro[r.centro]=(porCentro[r.centro]||0)+r.est;});const per='Período general';cont.innerHTML=`<div class="stats-grid"><div class="stat-card azul"><div class="stat-valor">${D.m4.length}</div><div class="stat-label">Visitas realizadas</div></div><div class="stat-card verde"><div class="stat-valor">${fmt(total)}</div><div class="stat-label">Estudiantes capacitados</div></div></div><div class="form-grid form-grid-3">${mkChartTbl('Por Programa','Departamento de Policía Municipal',per,porProg)}${mkChartTbl('Por Nivel Educativo','Departamento de Policía Municipal',per,porNivel)}${mkChartTbl('Por Centro Educativo','Departamento de Policía Municipal',per,porCentro)}</div>`;}
@@ -2535,13 +2608,11 @@ function imprimirM7(){if(!D.m7.length){toast('Guarde un informe primero','warnin
 function limpiarM7(){
   const cont=document.getElementById('wf-mod7-nuevo');
   if(cont){
-    cont.querySelectorAll('input').forEach(el=>{
-      if(el.type==='checkbox') el.checked=false;
+    cont.querySelectorAll('input,select,textarea').forEach(el=>{
+      if(el.type==='checkbox'||el.type==='radio') el.checked=false;
       else if(el.type==='number') el.value='0';
       else el.value='';
     });
-    cont.querySelectorAll('select').forEach(el=>el.value='');
-    cont.querySelectorAll('textarea').forEach(el=>el.value='');
   }
   const anioEl=document.getElementById('m7-anio');
   if(anioEl)anioEl.value=new Date().getFullYear();
@@ -2776,7 +2847,7 @@ function eliminarTodo(){pendingDel={tipo:'todo'};document.getElementById('modal-
 
 // RENDER TABLAS
 function renderAll(){['m1','m2','m3a','m4','m7'].forEach(m=>renderTabla(m));INST_SECUESTROS.forEach(i=>renderSecuestros(i.id));}
-function renderTabla(mod){const tM={manana:'06:00-14:00',tarde:'14:00-22:00',noche:'22:00-06:00'};if(mod==='m1'){const tbody=document.getElementById('tbody-m1');if(!tbody)return;tbody.innerHTML=D.m1.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.fi||''}</td><td>${r.ff||''}</td><td style="font-size:12px;">${(r.grupo||[]).slice(0,2).map(g=>g.n?.split(' ')[0]).join(', ')}${(r.grupo||[]).length>2?`+${(r.grupo||[]).length-2}`:''}</td><td>${r.movil||'—'}</td><td><span class="badge badge-verde">OK</span></td></tr>`).join('')||noData(6);}if(mod==='m2'){renderTablaM2ConAcceso();return;}if(mod==='m3a'){const tbody=document.getElementById('tbody-m3a');if(!tbody)return;tbody.innerHTML=D.m3a.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.fi||''}</td><td>${r.ff||''}</td><td>${tM[r.turno]||r.turno}</td><td style="font-size:12px;">${r.op?.split('—')[1]?.trim()||r.op}</td><td><span class="badge badge-dorado">${r.incidentes?.length||0}</span></td><td><button class="btn btn-secondary btn-sm" onclick="verBitacora('${r.id}')" title="Ver">👁️</button> <button class="btn btn-warning btn-sm" onclick="editarBitacora('${r.id}')" title="Editar">✏️</button> <button class="btn btn-primary btn-sm" onclick="imprimirBitacoraId('${r.id}')" title="Imprimir">🖨️</button> <button class="btn btn-danger btn-sm" onclick="eliminarBitacora('${r.id}')" title="Eliminar">🗑️</button></td></tr>`).join('')||noData(7);}if(mod==='m4'){const tbody=document.getElementById('tbody-m4');if(!tbody)return;tbody.innerHTML=D.m4.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.fecha}</td><td style="font-size:12px;">${r.oficial?.split(' ')[0]}</td><td>${r.centro}</td><td><span class="badge badge-verde">${r.prog}</span></td><td>${r.nivel}</td><td style="text-align:center;font-weight:700;">${r.est}</td><td>${r.cierre==='si'?'<span class="badge badge-dorado">⭐</span>':'—'}</td><td><button class="btn btn-warning btn-sm" onclick="editarM4('${r.id}')">✏️</button></td></tr>`).join('')||noData(9);}if(mod==='m7'){const tbody=document.getElementById('tbody-m7');if(!tbody)return;tbody.innerHTML=D.m7.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.mesNom} ${r.anio}</td><td style="text-align:right;font-weight:700;">${fmt(r.inf)}</td><td style="text-align:right;">₡${fmt(r.monto)}</td><td style="text-align:center;">${r.napel}</td><td><button class="btn btn-warning btn-sm" onclick="imprimirM7()">🖨️</button></td></tr>`).join('')||noData(6);}if(mod==='aud'){const tbody=document.getElementById('tbody-aud');if(!tbody)return;tbody.innerHTML=D.aud.slice().reverse().slice(0,50).map(a=>`<tr><td style="font-size:11px;">${a.ts}</td><td>${a.u}</td><td>${a.accion}</td><td>${a.modulo}</td><td style="font-size:12px;">${a.detalle}</td></tr>`).join('')||noData(5);}}
+function renderTabla(mod){const tM={manana:'06:00-14:00',tarde:'14:00-22:00',noche:'22:00-06:00'};if(mod==='m1'){const tbody=document.getElementById('tbody-m1');if(!tbody)return;tbody.innerHTML=D.m1.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.fi||''}</td><td>${r.ff||''}</td><td style="font-size:12px;">${(r.grupo||[]).slice(0,2).map(g=>g.n?.split(' ')[0]).join(', ')}${(r.grupo||[]).length>2?`+${(r.grupo||[]).length-2}`:''}</td><td>${r.movil||'—'}</td><td style="white-space:nowrap;"><button class="btn btn-primary btn-sm" onclick="imprimirM1Reg('${r.id}')" title="Imprimir">🖨️</button> <button class="btn btn-warning btn-sm" onclick="editarM1('${r.id}')" title="Editar">✏️</button> <button class="btn btn-danger btn-sm" onclick="eliminarM1('${r.id}')" title="Eliminar">🗑️</button></td></tr>`).join('')||noData(6);}if(mod==='m2'){renderTablaM2ConAcceso();return;}if(mod==='m3a'){const tbody=document.getElementById('tbody-m3a');if(!tbody)return;tbody.innerHTML=D.m3a.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.fi||''}</td><td>${r.ff||''}</td><td>${tM[r.turno]||r.turno}</td><td style="font-size:12px;">${r.op?.split('—')[1]?.trim()||r.op}</td><td><span class="badge badge-dorado">${r.incidentes?.length||0}</span></td><td><button class="btn btn-secondary btn-sm" onclick="verBitacora('${r.id}')" title="Ver">👁️</button> <button class="btn btn-warning btn-sm" onclick="editarBitacora('${r.id}')" title="Editar">✏️</button> <button class="btn btn-primary btn-sm" onclick="imprimirBitacoraId('${r.id}')" title="Imprimir">🖨️</button> <button class="btn btn-danger btn-sm" onclick="eliminarBitacora('${r.id}')" title="Eliminar">🗑️</button></td></tr>`).join('')||noData(7);}if(mod==='m4'){const tbody=document.getElementById('tbody-m4');if(!tbody)return;tbody.innerHTML=D.m4.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.fecha}</td><td style="font-size:12px;">${r.oficial?.split(' ')[0]}</td><td>${r.centro}</td><td><span class="badge badge-verde">${r.prog}</span></td><td>${r.nivel}</td><td style="text-align:center;font-weight:700;">${r.est}</td><td>${r.cierre==='si'?'<span class="badge badge-dorado">⭐</span>':'—'}</td><td><button class="btn btn-warning btn-sm" onclick="editarM4('${r.id}')">✏️</button></td></tr>`).join('')||noData(9);}if(mod==='m7'){const tbody=document.getElementById('tbody-m7');if(!tbody)return;tbody.innerHTML=D.m7.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.mesNom} ${r.anio}</td><td style="text-align:right;font-weight:700;">${fmt(r.inf)}</td><td style="text-align:right;">₡${fmt(r.monto)}</td><td style="text-align:center;">${r.napel}</td><td><button class="btn btn-warning btn-sm" onclick="imprimirM7()">🖨️</button></td></tr>`).join('')||noData(6);}if(mod==='aud'){const tbody=document.getElementById('tbody-aud');if(!tbody)return;tbody.innerHTML=D.aud.slice().reverse().slice(0,50).map(a=>`<tr><td style="font-size:11px;">${a.ts}</td><td>${a.u}</td><td>${a.accion}</td><td>${a.modulo}</td><td style="font-size:12px;">${a.detalle}</td></tr>`).join('')||noData(5);}}
 
 
 
