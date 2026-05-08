@@ -2142,48 +2142,12 @@ const yy=()=>new Date().getFullYear();
 
 function toast(msg,tipo='success'){const d=document.createElement('div');d.className='toast';const bg={success:'#dcfce7',danger:'#fee2e2',warning:'#fef3c7',info:'#dbeafe'};const tc={success:'#166534',danger:'#991b1b',warning:'#92400e',info:'#1e40af'};d.style.cssText=`background:${bg[tipo]||bg.info};color:${tc[tipo]||tc.info};border:1px solid ${tc[tipo]||tc.info};`;d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),4000);}
 function print2(html){
-  // Inyectar contenido en un div oculto y usar CSS @media print
-  const existing = document.getElementById('_print_content');
-  if(existing) existing.remove();
-
-  const div = document.createElement('div');
-  div.id = '_print_content';
-  div.innerHTML = html;
-  document.body.appendChild(div);
-
-  // Agregar estilos de impresión temporales
-  const styleId = '_print_style_temp';
-  const oldStyle = document.getElementById(styleId);
-  if(oldStyle) oldStyle.remove();
-
-  const style = document.createElement('style');
-  style.id = styleId;
-  style.textContent = `
-    @media print {
-      body > *:not(#_print_content) { display: none !important; }
-      #_print_content {
-        display: block !important;
-        font-family: Arial, sans-serif;
-        font-size: 11pt;
-        color: #111;
-      }
-      #_print_content p { text-align: justify; line-height: 1.7; word-break: break-word; overflow-wrap: break-word; }
-      #_print_content ul { padding-left: 18px; margin: 4px 0 8px; }
-      #_print_content li { margin-bottom: 3px; }
-      #_print_content table { width: 100%; border-collapse: collapse; }
-      @page { size: letter portrait; margin: 2.5cm 3cm; }
-    }
-    #_print_content { display: none; }
-  `;
-  document.head.appendChild(style);
-
-  setTimeout(function(){
-    window.print();
-    setTimeout(function(){
-      div.remove();
-      style.remove();
-    }, 1000);
-  }, 300);
+  var printWin = window.open('','_blank','width=1,height=1,left=-1000,top=-1000');
+  if(!printWin){ alert('Permita ventanas emergentes para imprimir'); return; }
+  printWin.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><style>@page{size:letter portrait;margin:2.5cm 3cm;}*{box-sizing:border-box;}body{font-family:Arial,sans-serif;font-size:11pt;color:#111;margin:0;padding:0;}p{text-align:justify;line-height:1.7;margin:4px 0;word-break:break-word;overflow-wrap:break-word;}table{width:100%;border-collapse:collapse;}td{word-break:break-word;overflow-wrap:break-word;}ul{padding-left:18px;margin:4px 0 8px;}li{margin-bottom:3px;}</style></head><body>' + html + '</body></html>');
+  printWin.document.close();
+  printWin.focus();
+  setTimeout(function(){ printWin.print(); printWin.close(); }, 600);
 }
 function noData(cols){return`<tr><td colspan="${cols}" style="text-align:center;color:#999;padding:16px;">Sin registros</td></tr>`;}
 
@@ -2319,36 +2283,28 @@ function imprimirM1(){
   </div>`);
 }
 function limpiarM1(){
-  // Limpiar TODOS los inputs, selects y textareas del formulario M1
-  const contenedor = document.getElementById('m1-nuevo');
-  if(contenedor){
-    contenedor.querySelectorAll('input[type="text"], input[type="number"], input[type="date"], input[type="time"], textarea').forEach(el=>{
-      if(el.type==='number') el.value=0;
-      else el.value='';
+  // Limpiar todos los campos del formulario M1
+  const cont = document.getElementById('m1-nuevo');
+  if(cont){
+    cont.querySelectorAll('input[type="text"],input[type="number"],input[type="date"],input[type="time"],textarea').forEach(el=>{
+      el.value = (el.type==='number') ? '0' : '';
     });
-    contenedor.querySelectorAll('select').forEach(el=>el.value='');
-    contenedor.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.checked=false);
+    cont.querySelectorAll('select').forEach(el=>el.value='');
+    cont.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.checked=false);
   }
-  // Limpiar campos cuantitativos a 0
-  CUANT_CAMPOS.forEach(([,id])=>{const e=document.getElementById(id);if(e)e.value=0;});
+  // Limpiar documentos
   TIPOS_DOC.forEach(t=>{const e=document.getElementById(t.id);if(e)e.value=0;});
-  // Cerrar paneles de acciones
-  ACCIONES.forEach(a=>{
-    const cb=document.getElementById('ach-'+a.id);
-    if(cb){cb.checked=false;}
-    const body=document.getElementById('acb-'+a.id);
-    if(body)body.classList.remove('open');
-  });
-  // Limpiar dinámicos
+  // Limpiar decomisos
   const decList=document.getElementById('m1-decomisos-list');
-  if(decList)decList.innerHTML='';
+  if(decList) decList.innerHTML='';
   nDec=0;
+  // Limpiar partes vinculados
   const pvList=document.getElementById('m1-partes-vinculados');
-  if(pvList)pvList.innerHTML='';
+  if(pvList) pvList.innerHTML='';
   // Ocultar campo moto
   const motoW=document.getElementById('m1-moto-w');
-  if(motoW)motoW.style.display='none';
-
+  if(motoW) motoW.style.display='none';
+  // Limpiar acciones policiales
   limpiarAccionesPoliciales();
 }
 
@@ -2461,7 +2417,7 @@ function genApelaciones(){const n=parseInt(document.getElementById('m7-napel').v
 function initHistGrid(){const cont=document.getElementById('m7-hist-grid');if(!cont||cont.innerHTML.trim())return;const saved=D.m7hist;const yr=parseInt(document.getElementById('m7-anio-hist')?.value)||2025;cont.innerHTML=MESES_NOM.slice(1).map((m,i)=>{const sv=saved[yr]?saved[yr][i+1]:null;return`<div class="form-field"><label>${m}</label><input type="number" id="hist-inf-${i+1}" placeholder="Infracciones" min="0" value="${sv?.inf||''}"><input type="number" id="hist-mto-${i+1}" placeholder="Monto ₡" min="0" style="margin-top:4px;" value="${sv?.mto||''}"></div>`;}).join('');}
 
 
-function imprimirM7(){if(!D.m7.length){toast('Guarde un informe primero','warning');return;}const r=D.m7[D.m7.length-1];print2(`<div style="max-width:800px;margin:0 auto;font-size:13px;"><div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a3a5c;padding-bottom:10px;margin-bottom:12px;"><img src="${I_VIDA}" style="height:60px;"><div style="text-align:center;"><strong>MUNICIPALIDAD DEL CANTÓN CENTRAL DE LIMÓN</strong><br><strong>DEPARTAMENTO DE ESTACIONÓMETROS</strong><br>${r.id}</div><img src="${I_MUNI}" style="height:60px;"></div><h2 style="text-align:center;color:#1a3a5c;margin:16px 0;">INFORME MENSUAL — ${(r.mesNom||'').toUpperCase()} ${r.anio}</h2><p><strong>Total Infracciones: </strong>${fmt(r.inf)}</p><p><strong>Monto Total: </strong>₡${fmt(r.monto)}</p><p><strong>Cancelaciones DECSIS: </strong>${r.canc}</p><p><strong>Boletas Anuladas: </strong>${r.anul}</p><p><strong>Apelaciones: </strong>${r.napel}</p>${r.apelantes.map(a=>`<p style="margin-left:16px;">- ${a}</p>`).join('')}<div style="margin-top:24px;text-align:center;width:45%;"><div style="height:55px;border-bottom:1px solid #333;margin-bottom:6px;"></div><div style="font-size:12px;font-weight:600;">${r.reg}</div><div style="font-size:10px;color:#666;">Jefatura de Estacionómetros — Firma</div></div><div style="text-align:center;margin-top:18px;font-size:10px;color:#999;">"Limón Ciudad de la Vida"</div></div>`);}
+function imprimirM7(){if(!D.m7.length){toast('Guarde un informe primero','warning');return;}const r=D.m7[0];print2(`<div style="max-width:800px;margin:0 auto;font-size:13px;"><div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a3a5c;padding-bottom:10px;margin-bottom:12px;"><img src="${I_VIDA}" style="height:60px;"><div style="text-align:center;"><strong>MUNICIPALIDAD DEL CANTÓN CENTRAL DE LIMÓN</strong><br><strong>DEPARTAMENTO DE ESTACIONÓMETROS</strong><br>${r.id}</div><img src="${I_MUNI}" style="height:60px;"></div><h2 style="text-align:center;color:#1a3a5c;margin:16px 0;">INFORME MENSUAL — ${(r.mesNom||'').toUpperCase()} ${r.anio}</h2><p><strong>Total Infracciones: </strong>${fmt(r.inf)}</p><p><strong>Monto Total: </strong>₡${fmt(r.monto)}</p><p><strong>Cancelaciones DECSIS: </strong>${r.canc}</p><p><strong>Boletas Anuladas: </strong>${r.anul}</p><p><strong>Apelaciones: </strong>${r.napel}</p>${r.apelantes.map(a=>`<p style="margin-left:16px;">- ${a}</p>`).join('')}<div style="margin-top:24px;text-align:center;width:45%;"><div style="height:55px;border-bottom:1px solid #333;margin-bottom:6px;"></div><div style="font-size:12px;font-weight:600;">${r.reg}</div><div style="font-size:10px;color:#666;">Jefatura de Estacionómetros — Firma</div></div><div style="text-align:center;margin-top:18px;font-size:10px;color:#999;">"Limón Ciudad de la Vida"</div></div>`);}
 function limpiarM7(){
   // Limpiar TODOS los inputs y selects del formulario M7
   const contenedor = document.getElementById('m7-nuevo');
@@ -2861,7 +2817,7 @@ function editarParteM2(id){
 // ============================================================
 function imprimirM2(){
   if(!D.m2.length){toast('Guarde el parte primero','warning');return;}
-  const r=D.m2[D.m2.length-1];
+  const r=D.m2[0];
   const consec=document.getElementById('c-m2').textContent;
   const fmtPersona=(ps,tipo)=>{
     const validas=ps.filter(p=>p.nom&&p.nom.trim());
