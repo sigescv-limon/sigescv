@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="version" content="3.1-202605080442">
+<meta name="version" content="3.2-202605080503">
 <title>SIGESCV v2.0 — Policía Municipal de Limón</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -920,17 +920,9 @@ tbody td{padding:8px 11px;}
              onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
     </div>
     <div class="ap-body" id="ap-body-ap19" style="display:none;">
-      <div class="form-grid form-grid-3">
-        <div class="form-field"><label>Tipo de droga</label>
-          <select id="ap19-tipo"><option value="">Seleccionar...</option><option value="MARIHUANA">MARIHUANA</option><option value="COCAINA">COCAINA</option><option value="CRACK">CRACK</option><option value="OTRAS DROGAS">OTRAS DROGAS</option><option value="EXTASIS">EXTASIS</option><option value="HEROÍNA">HEROÍNA</option><option value="OTROS">OTROS</option></select>
-        </div>
-        <div class="form-field"><label>Presentación</label>
-          <select id="ap19-pres"><option value="">Seleccionar...</option><option value="KILOS">KILOS</option><option value="LIBRAS">LIBRAS</option><option value="ONZAS">ONZAS</option><option value="GRAMOS">GRAMOS</option><option value="PUCHOS">PUCHOS</option><option value="CIGARRILLOS">CIGARRILLOS</option><option value="CAJETAS">CAJETAS</option><option value="TOCOLAS">TOCOLAS</option><option value="PLANTAS">PLANTAS</option><option value="SEMILLAS">SEMILLAS</option><option value="PUNTAS">PUNTAS</option><option value="PIEDRAS">PIEDRAS</option><option value="PASTILLAS">PASTILLAS</option><option value="DOSIS">DOSIS</option></select>
-        </div>
-        <div class="form-field"><label>Cantidad</label>
-          <input type="number" id="ap19-cant" min="0" value="0">
-        </div>
-      </div>
+      <div class="alert alert-info" style="font-size:12px;margin-bottom:8px;">Use el botón para agregar cada tipo de droga decomisada.</div>
+      <div id="ap19-list"></div>
+      <button class="btn btn-secondary btn-sm" onclick="addDrogaItem('ap19')">+ Agregar droga</button>
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap20">
@@ -941,17 +933,9 @@ tbody td{padding:8px 11px;}
              onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
     </div>
     <div class="ap-body" id="ap-body-ap20" style="display:none;">
-      <div class="form-grid form-grid-3">
-        <div class="form-field"><label>Tipo de droga</label>
-          <select id="ap20-tipo"><option value="">Seleccionar...</option><option value="MARIHUANA">MARIHUANA</option><option value="COCAINA">COCAINA</option><option value="CRACK">CRACK</option><option value="OTRAS DROGAS">OTRAS DROGAS</option><option value="EXTASIS">EXTASIS</option><option value="HEROÍNA">HEROÍNA</option><option value="OTROS">OTROS</option></select>
-        </div>
-        <div class="form-field"><label>Presentación</label>
-          <select id="ap20-pres"><option value="">Seleccionar...</option><option value="KILOS">KILOS</option><option value="LIBRAS">LIBRAS</option><option value="ONZAS">ONZAS</option><option value="GRAMOS">GRAMOS</option><option value="PUCHOS">PUCHOS</option><option value="CIGARRILLOS">CIGARRILLOS</option><option value="CAJETAS">CAJETAS</option><option value="TOCOLAS">TOCOLAS</option><option value="PLANTAS">PLANTAS</option><option value="SEMILLAS">SEMILLAS</option><option value="PUNTAS">PUNTAS</option><option value="PIEDRAS">PIEDRAS</option><option value="PASTILLAS">PASTILLAS</option><option value="DOSIS">DOSIS</option></select>
-        </div>
-        <div class="form-field"><label>Cantidad</label>
-          <input type="number" id="ap20-cant" min="0" value="0">
-        </div>
-      </div>
+      <div class="alert alert-info" style="font-size:12px;margin-bottom:8px;">Use el botón para agregar cada tipo de droga hallada.</div>
+      <div id="ap20-list"></div>
+      <button class="btn btn-secondary btn-sm" onclick="addDrogaItem('ap20')">+ Agregar droga</button>
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap21">
@@ -962,17 +946,9 @@ tbody td{padding:8px 11px;}
              onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
     </div>
     <div class="ap-body" id="ap-body-ap21" style="display:none;">
-      <div class="form-grid form-grid-3">
-        <div class="form-field"><label>Tipo de arma</label>
-          <select id="ap21-tipo"><option value="">Seleccionar...</option><option value="PISTOLA">PISTOLA</option><option value="REVOLVER">REVOLVER</option><option value="ESCOPETA">ESCOPETA</option><option value="RIFLE">RIFLE</option><option value="CARABINA">CARABINA</option><option value="HECHIZA">HECHIZA</option><option value="JUGUETE">JUGUETE</option><option value="AIRE COMPRIMIDO(BALINES-COPAS)">AIRE COMPRIMIDO(BALINES-COPAS)</option><option value="EXPLOSIVOS">EXPLOSIVOS</option><option value="OTRAS">OTRAS</option><option value="NO INDICA">NO INDICA</option></select>
-        </div>
-        <div class="form-field"><label>Modelo/Marca</label>
-          <select id="ap21-modelo"><option value="">Seleccionar...</option><option value="SMITH & WESSON">SMITH & WESSON</option><option value="ROSSI">ROSSI</option><option value="GLOCK">GLOCK</option><option value="BRYCO">BRYCO</option><option value="RG">RG</option><option value="JERICO">JERICO</option><option value="WINCHESTER">WINCHESTER</option><option value="LORCIN">LORCIN</option><option value="STAR">STAR</option><option value="JENNINGS">JENNINGS</option><option value="BROWNNING">BROWNNING</option><option value="COLT">COLT</option><option value="DAVIS">DAVIS</option><option value="DOBERMAN">DOBERMAN</option><option value="HI POINT">HI POINT</option></select>
-        </div>
-        <div class="form-field"><label>Cantidad</label>
-          <input type="number" id="ap21-cant" min="0" value="0">
-        </div>
-      </div>
+      <div class="alert alert-info" style="font-size:12px;margin-bottom:8px;">Use el botón para agregar cada arma decomisada.</div>
+      <div id="ap21-list"></div>
+      <button class="btn btn-secondary btn-sm" onclick="addArmaItem()">+ Agregar arma</button>
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap22">
@@ -1095,15 +1071,14 @@ tbody td{padding:8px 11px;}
              onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
     </div>
     <div class="ap-body" id="ap-body-ap31" style="display:none;">
-      <div class="form-grid form-grid-3">
-        <div class="form-field"><label>Tipo de licor</label>
-          <select id="ap31-tipo"><option value="">Seleccionar...</option><option value="LICOR (GUAROS)">LICOR (GUAROS)</option><option value="VINO">VINO</option><option value="CERVEZA">CERVEZA</option><option value="ALCOHOL">ALCOHOL</option><option value="OTROS">OTROS</option></select>
+      <div class="form-grid form-grid-2">
+        <div class="form-field">
+          <label>Cantidad total (unidades/botellas)</label>
+          <input type="number" id="ap31-cant" min="0" value="0" placeholder="0">
         </div>
-        <div class="form-field"><label>Presentación</label>
-          <select id="ap31-pres"><option value="">Seleccionar...</option><option value="UNIDADES">UNIDADES</option><option value="BOTELLAS">BOTELLAS</option><option value="CAJAS">CAJAS</option><option value="GALONES">GALONES</option><option value="ESTAÑONES">ESTAÑONES</option></select>
-        </div>
-        <div class="form-field"><label>Cantidad</label>
-          <input type="number" id="ap31-cant" min="0" value="0">
+        <div class="form-field field-span-2">
+          <label>Descripción del decomiso</label>
+          <textarea id="ap31-desc" rows="3" placeholder="Ej: 12 botellas de guaro Cacique, 6 cervezas Imperial, 2 galones de alcohol..."></textarea>
         </div>
       </div>
     </div>
@@ -1130,18 +1105,24 @@ tbody td{padding:8px 11px;}
              onclick="event.stopPropagation()" style="width:70px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
     </div>
     <div class="ap-body" id="ap-body-ap33" style="display:none;">
-      <div class="form-grid form-grid-3">
-        <div class="form-field"><label>Distrito</label>
-          <select id="ap33-dist"><option value="">Seleccionar...</option><option value="Limón">Limón</option><option value="Valle La Estrella">Valle La Estrella</option><option value="Río Blanco">Río Blanco</option><option value="Matama">Matama</option></select>
-        </div>
-        <div class="form-field"><label>Rango horario</label>
-          <input type="text" id="ap33-hora" placeholder="Ej: 06:00 - 10:00">
-        </div>
-        <div class="form-field"><label>Zonas cubiertas</label>
-          <input type="text" id="ap33-zonas" placeholder="Describa las zonas">
+      <div id="ap33-list">
+        <div class="ap-detalle-item" id="ap33-det-1">
+          <div class="form-grid form-grid-3">
+            <div class="form-field"><label>Distrito</label>
+              <select id="ap33-dist-1"><option value="">Seleccionar...</option><option value="Limón">Limón</option><option value="Valle La Estrella">Valle La Estrella</option><option value="Río Blanco">Río Blanco</option><option value="Matama">Matama</option></select>
+            </div>
+            <div class="form-field"><label>Rango horario</label>
+              <input type="text" id="ap33-hora-1" placeholder="Ej: 06:00 - 10:00">
+            </div>
+            <div class="form-field"><label>Zonas cubiertas</label>
+              <input type="text" id="ap33-zonas-1" placeholder="Describa las zonas">
+            </div>
+          </div>
         </div>
       </div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:6px;" onclick="addPatrullaje()">+ Agregar distrito</button>
     </div>
+  </div>
   </div>
 </div><!-- /#m1-acciones-policiales -->
      <div class="sec-titulo">📄 Partes Policiales Vinculados</div>
@@ -1928,6 +1909,120 @@ function quitarDetalle(apId, n) {
   actualizarContadorAP(apId);
 }
 
+// ── CONTADORES DINÁMICOS ──────────────────────────────────
+const _cDroga={}, _cArma={}, _cPatr={};
+
+function addDrogaItem(apId){
+  _cDroga[apId]=(_cDroga[apId]||0)+1;
+  const n=_cDroga[apId];
+  const list=document.getElementById(apId+'-list');
+  if(!list)return;
+  const div=document.createElement('div');
+  div.className='ap-detalle-item'; div.id=apId+'-det-'+n;
+  div.innerHTML=`<button class="btn-quitar" onclick="quitarDrogaItem('${apId}',${n})">✕</button>
+    <div class="form-grid form-grid-3">
+      <div class="form-field"><label>Tipo de droga</label>
+        <select id="${apId}-tipo-${n}"><option value="">Seleccionar...</option><option value="MARIHUANA">MARIHUANA</option><option value="COCAINA">COCAINA</option><option value="CRACK">CRACK</option><option value="OTRAS DROGAS">OTRAS DROGAS</option><option value="EXTASIS">EXTASIS</option><option value="HEROÍNA">HEROÍNA</option><option value="OTROS">OTROS</option></select>
+      </div>
+      <div class="form-field"><label>Presentación</label>
+        <select id="${apId}-pres-${n}"><option value="">Seleccionar...</option><option value="KILOS">KILOS</option><option value="LIBRAS">LIBRAS</option><option value="ONZAS">ONZAS</option><option value="GRAMOS">GRAMOS</option><option value="PUCHOS">PUCHOS</option><option value="CIGARRILLOS">CIGARRILLOS</option><option value="CAJETAS">CAJETAS</option><option value="TOCOLAS">TOCOLAS</option><option value="PLANTAS">PLANTAS</option><option value="SEMILLAS">SEMILLAS</option><option value="PUNTAS">PUNTAS</option><option value="PIEDRAS">PIEDRAS</option><option value="PASTILLAS">PASTILLAS</option><option value="DOSIS">DOSIS</option></select>
+      </div>
+      <div class="form-field"><label>Cantidad</label>
+        <input type="number" id="${apId}-cant-${n}" min="0" value="0">
+      </div>
+    </div>`;
+  list.appendChild(div);
+  // Actualizar contador
+  const total=list.querySelectorAll('.ap-detalle-item').length;
+  const cnt=document.getElementById('ap-cnt-'+apId);
+  if(cnt){cnt.value=total; cnt.textContent=total;}
+  const cb=document.getElementById('ap-cb-'+apId);
+  if(cb&&!cb.checked){cb.checked=true; toggleAP(apId);}
+}
+
+function quitarDrogaItem(apId,n){
+  const el=document.getElementById(apId+'-det-'+n);
+  if(el)el.remove();
+  const list=document.getElementById(apId+'-list');
+  const total=list?list.querySelectorAll('.ap-detalle-item').length:0;
+  const cnt=document.getElementById('ap-cnt-'+apId);
+  if(cnt){cnt.value=total; cnt.textContent=total;}
+}
+
+function addArmaItem(){
+  _cArma.ap21=(_cArma.ap21||0)+1;
+  const n=_cArma.ap21;
+  const list=document.getElementById('ap21-list');
+  if(!list)return;
+  const div=document.createElement('div');
+  div.className='ap-detalle-item'; div.id='ap21-det-'+n;
+  div.innerHTML=`<button class="btn-quitar" onclick="quitarArmaItem(${n})">✕</button>
+    <div class="form-grid form-grid-3">
+      <div class="form-field"><label>Tipo de arma</label>
+        <select id="ap21-tipo-${n}"><option value="">Seleccionar...</option><option value="PISTOLA">PISTOLA</option><option value="REVOLVER">REVOLVER</option><option value="ESCOPETA">ESCOPETA</option><option value="RIFLE">RIFLE</option><option value="CARABINA">CARABINA</option><option value="HECHIZA">HECHIZA</option><option value="JUGUETE">JUGUETE</option><option value="AIRE COMPRIMIDO(BALINES-COPAS)">AIRE COMPRIMIDO(BALINES-COPAS)</option><option value="EXPLOSIVOS">EXPLOSIVOS</option><option value="OTRAS">OTRAS</option><option value="NO INDICA">NO INDICA</option></select>
+      </div>
+      <div class="form-field"><label>Marca/Modelo</label>
+        <input type="text" id="ap21-modelo-${n}" placeholder="Ej: Glock 19">
+      </div>
+      <div class="form-field"><label>Cantidad</label>
+        <input type="number" id="ap21-cant-${n}" min="0" value="1">
+      </div>
+    </div>`;
+  list.appendChild(div);
+  const total=list.querySelectorAll('.ap-detalle-item').length;
+  const cnt=document.getElementById('ap-cnt-ap21');
+  if(cnt){cnt.value=total; cnt.textContent=total;}
+  const cb=document.getElementById('ap-cb-ap21');
+  if(cb&&!cb.checked){cb.checked=true; toggleAP('ap21');}
+}
+
+function quitarArmaItem(n){
+  const el=document.getElementById('ap21-det-'+n);
+  if(el)el.remove();
+  const list=document.getElementById('ap21-list');
+  const total=list?list.querySelectorAll('.ap-detalle-item').length:0;
+  const cnt=document.getElementById('ap-cnt-ap21');
+  if(cnt){cnt.value=total; cnt.textContent=total;}
+}
+
+let _nPatr=1;
+function addPatrullaje(){
+  _nPatr++;
+  const n=_nPatr;
+  const list=document.getElementById('ap33-list');
+  if(!list)return;
+  const div=document.createElement('div');
+  div.className='ap-detalle-item'; div.id='ap33-det-'+n;
+  div.innerHTML=`<button class="btn-quitar" onclick="quitarPatrullaje(${n})">✕</button>
+    <div class="form-grid form-grid-3">
+      <div class="form-field"><label>Distrito</label>
+        <select id="ap33-dist-${n}"><option value="">Seleccionar...</option><option value="Limón">Limón</option><option value="Valle La Estrella">Valle La Estrella</option><option value="Río Blanco">Río Blanco</option><option value="Matama">Matama</option></select>
+      </div>
+      <div class="form-field"><label>Rango horario</label>
+        <input type="text" id="ap33-hora-${n}" placeholder="Ej: 06:00 - 10:00">
+      </div>
+      <div class="form-field"><label>Zonas cubiertas</label>
+        <input type="text" id="ap33-zonas-${n}" placeholder="Describa las zonas">
+      </div>
+    </div>`;
+  list.appendChild(div);
+  const total=list.querySelectorAll('.ap-detalle-item').length;
+  const cnt=document.getElementById('ap-cnt-ap33');
+  if(cnt){cnt.value=total;}
+  const cb=document.getElementById('ap-cb-ap33');
+  if(cb&&!cb.checked){cb.checked=true; toggleAP('ap33');}
+}
+
+function quitarPatrullaje(n){
+  const el=document.getElementById('ap33-det-'+n);
+  if(el)el.remove();
+  const list=document.getElementById('ap33-list');
+  const total=list?list.querySelectorAll('.ap-detalle-item').length:0;
+  const cnt=document.getElementById('ap-cnt-ap33');
+  if(cnt)cnt.value=total;
+}
+
+
 function actualizarContadorAP(apId) {
   const list = document.getElementById(apId+'-list');
   const cnt  = document.getElementById('ap-cnt-'+apId);
@@ -2030,17 +2125,27 @@ function leerAccionesPoliciales() {
         moto: parseInt(document.getElementById('ap18-moto')?.value)||0
       };
     } else if (['ap19','ap20'].includes(apId)) {
-      datos.detalle = {
-        tipo: document.getElementById(apId+'-tipo')?.value||'',
-        pres: document.getElementById(apId+'-pres')?.value||'',
-        cant: parseInt(document.getElementById(apId+'-cant')?.value)||0
-      };
+      const items=[];
+      document.querySelectorAll('#'+apId+'-list .ap-detalle-item').forEach(d=>{
+        const n=d.id.replace(apId+'-det-','');
+        items.push({
+          tipo: document.getElementById(apId+'-tipo-'+n)?.value||'',
+          pres: document.getElementById(apId+'-pres-'+n)?.value||'',
+          cant: parseInt(document.getElementById(apId+'-cant-'+n)?.value)||0
+        });
+      });
+      datos.detalle = { items };
     } else if (apId==='ap21') {
-      datos.detalle = {
-        tipo: document.getElementById('ap21-tipo')?.value||'',
-        modelo: document.getElementById('ap21-modelo')?.value||'',
-        cant: parseInt(document.getElementById('ap21-cant')?.value)||0
-      };
+      const items=[];
+      document.querySelectorAll('#ap21-list .ap-detalle-item').forEach(d=>{
+        const n=d.id.replace('ap21-det-','');
+        items.push({
+          tipo: document.getElementById('ap21-tipo-'+n)?.value||'',
+          modelo: document.getElementById('ap21-modelo-'+n)?.value||'',
+          cant: parseInt(document.getElementById('ap21-cant-'+n)?.value)||1
+        });
+      });
+      datos.detalle = { items };
     } else if (apId==='ap22') {
       datos.detalle = { tipo: document.getElementById('ap22-tipo')?.value||'' };
     } else if (['ap23','ap24','ap25','ap26','ap29','ap30'].includes(apId)) {
@@ -2049,9 +2154,8 @@ function leerAccionesPoliciales() {
       datos.detalle = { personas: parseInt(document.getElementById('ap27-det')?.value)||0 };
     } else if (apId==='ap31') {
       datos.detalle = {
-        tipo: document.getElementById('ap31-tipo')?.value||'',
-        pres: document.getElementById('ap31-pres')?.value||'',
-        cant: parseInt(document.getElementById('ap31-cant')?.value)||0
+        cant: parseInt(document.getElementById('ap31-cant')?.value)||0,
+        desc: document.getElementById('ap31-desc')?.value||''
       };
     } else if (apId==='ap32') {
       datos.detalle = {
@@ -2059,11 +2163,16 @@ function leerAccionesPoliciales() {
         ubic: document.getElementById('ap32-ubic')?.value||''
       };
     } else if (apId==='ap33') {
-      datos.detalle = {
-        dist: document.getElementById('ap33-dist')?.value||'',
-        hora: document.getElementById('ap33-hora')?.value||'',
-        zonas: document.getElementById('ap33-zonas')?.value||''
-      };
+      const items=[];
+      document.querySelectorAll('#ap33-list .ap-detalle-item').forEach(d=>{
+        const n=d.id.replace('ap33-det-','');
+        items.push({
+          dist: document.getElementById('ap33-dist-'+n)?.value||'',
+          hora: document.getElementById('ap33-hora-'+n)?.value||'',
+          zonas: document.getElementById('ap33-zonas-'+n)?.value||''
+        });
+      });
+      datos.detalle = { items };
     }
     resultado[apId] = datos;
   });
@@ -2338,23 +2447,61 @@ function imprimirM1Reg(id){
 function editarM1(id){
   const r=D.m1.find(x=>String(x.id)===String(id));
   if(!r){toast('Reporte no encontrado','danger');return;}
-  const setV=(elId,val)=>{const e=document.getElementById(elId);if(e)e.value=val||'';};
-  setV('m1-fi',r.fi); setV('m1-ff',r.ff);
-  setV('m1-hi',r.hi); setV('m1-hf',r.hf);
-  setV('m1-movil',r.movil); setV('m1-area',r.area);
-  setV('m1-sup',r.supervisor); setV('m1-novedades',r.novedades);
-  setV('m1-colab',r.colab); setV('m1-docs-obs',r.docsObs);
-  // Marcar grupo
-  document.querySelectorAll('#m1-grupo input[type="checkbox"]').forEach(cb=>{
-    cb.checked=(r.grupo||[]).some(g=>(g.n||g)===cb.value);
-  });
-  // Cargar docs
-  TIPOS_DOC.forEach(t=>{const e=document.getElementById(t.id);if(e)e.value=r[t.id]||r.docs?.[t.l]||0;});
-  window._editandoM1=id;
-  navTo('m1');
-  const tab=document.querySelector('[onclick*="wf-mod1-nuevo"]');
-  if(tab)tab.click();
-  toast('Reporte cargado para edición','warning');
+  // Navegar al módulo M1
+  navTo('mod1');
+  // Activar pestaña "Nuevo Reporte" manualmente
+  const tabsRow=document.querySelector('#wf-tabs-mod1');
+  if(tabsRow){
+    tabsRow.querySelectorAll('.wf-tab').forEach(t=>t.classList.remove('active'));
+    const tabNuevo=tabsRow.querySelector('.wf-tab');
+    if(tabNuevo) tabNuevo.classList.add('active');
+  }
+  // Activar el contenido de Nuevo Reporte
+  document.querySelectorAll('[id^="wf-mod1-"]').forEach(c=>c.classList.remove('active'));
+  const contNuevo=document.getElementById('wf-mod1-nuevo');
+  if(contNuevo) contNuevo.classList.add('active');
+  // Cargar datos después de que el DOM sea visible
+  setTimeout(()=>{
+    const setV=(elId,val)=>{const e=document.getElementById(elId);if(e)e.value=val||'';};
+    setV('m1-fi',r.fi); setV('m1-ff',r.ff);
+    setV('m1-hi',r.hi); setV('m1-hf',r.hf);
+    setV('m1-movil',r.movil); setV('m1-area',r.area);
+    setV('m1-sup',r.supervisor);
+    setV('m1-novedades',r.novedades);
+    setV('m1-colab',r.colab);
+    setV('m1-docs-obs',r.docsObs);
+    // Marcar grupo
+    document.querySelectorAll('#m1-grupo input[type="checkbox"]').forEach(cb=>{
+      cb.checked=(r.grupo||[]).some(g=>(g.n||g)===cb.value);
+    });
+    // Cargar documentos
+    TIPOS_DOC.forEach(t=>{
+      const e=document.getElementById(t.id);
+      if(e) e.value=parseInt(r[t.id])||parseInt(r.docs?.[t.l])||0;
+    });
+    // Cargar acciones policiales
+    AP_CAMPOS.forEach(([apId,lbl])=>{
+      const v=parseInt(r.cuant?.[lbl])||parseInt(r[apId])||0;
+      if(v>0){
+        const cb=document.getElementById('ap-cb-'+apId);
+        const cnt=document.getElementById('ap-cnt-'+apId);
+        const body=document.getElementById('ap-body-'+apId);
+        if(cb){cb.checked=true;}
+        if(cnt){cnt.value=v; cnt.textContent=v;}
+        if(body){body.style.display='block';}
+      }
+    });
+    window._editandoM1=id;
+    // Cambiar botón guardar para indicar edición
+    const btnGuardar=document.querySelector('[onclick="guardarM1()"]');
+    if(btnGuardar){
+      btnGuardar.textContent='💾 Actualizar Reporte';
+      btnGuardar.style.background='var(--dorado)';
+    }
+    toast('✏️ Reporte '+id+' cargado. Modifique y guarde.','warning');
+    // Scroll al inicio del formulario
+    contNuevo.scrollIntoView({behavior:'smooth',block:'start'});
+  },150);
 }
 
 async function eliminarM1(id){
