@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="version" content="3.3-202605090514">
+<meta name="version" content="3.4-202605090606">
 <title>SIGESCV v2.0 — Policía Municipal de Limón</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -2474,21 +2474,35 @@ function imprimirM1Reg(id){
 function editarM1(id){
   const r=D.m1.find(x=>String(x.id)===String(id));
   if(!r){toast('Reporte no encontrado','danger');return;}
+
+  // Asignar INMEDIATAMENTE antes del setTimeout
+  window._editandoM1=id;
+
   // Navegar al módulo M1
   navTo('mod1');
-  // Activar pestaña "Nuevo Reporte" manualmente
+
+  // Activar pestaña Nuevo Reporte
   const tabsRow=document.querySelector('#wf-tabs-mod1');
   if(tabsRow){
     tabsRow.querySelectorAll('.wf-tab').forEach(t=>t.classList.remove('active'));
-    const tabNuevo=tabsRow.querySelector('.wf-tab');
-    if(tabNuevo) tabNuevo.classList.add('active');
+    tabsRow.querySelector('.wf-tab')?.classList.add('active');
   }
-  // Activar el contenido de Nuevo Reporte
   document.querySelectorAll('[id^="wf-mod1-"]').forEach(c=>c.classList.remove('active'));
   const contNuevo=document.getElementById('wf-mod1-nuevo');
   if(contNuevo) contNuevo.classList.add('active');
-  // Cargar datos después de que el DOM sea visible
+
+  // Cambiar botón guardar inmediatamente
+  const btnGuardar=document.querySelector('[onclick="guardarM1()"]');
+  if(btnGuardar){
+    btnGuardar.textContent='💾 Actualizar Reporte';
+    btnGuardar.style.background='var(--dorado)';
+  }
+
+  // Cargar datos con delay para que el DOM sea visible
   setTimeout(()=>{
+    // Limpiar formulario primero para evitar mezcla de datos
+    limpiarAccionesPoliciales();
+
     const setV=(elId,val)=>{const e=document.getElementById(elId);if(e)e.value=val||'';};
     setV('m1-fi',r.fi); setV('m1-ff',r.ff);
     setV('m1-hi',r.hi); setV('m1-hf',r.hf);
@@ -2497,38 +2511,34 @@ function editarM1(id){
     setV('m1-novedades',r.novedades);
     setV('m1-colab',r.colab);
     setV('m1-docs-obs',r.docsObs);
+
     // Marcar grupo
     document.querySelectorAll('#m1-grupo input[type="checkbox"]').forEach(cb=>{
       cb.checked=(r.grupo||[]).some(g=>(g.n||g)===cb.value);
     });
+
     // Cargar documentos
     TIPOS_DOC.forEach(t=>{
       const e=document.getElementById(t.id);
       if(e) e.value=parseInt(r[t.id])||parseInt(r.docs?.[t.l])||0;
     });
-    // Cargar acciones policiales
+
+    // Cargar acciones policiales — marcar checkbox Y poner valor en contador
     AP_CAMPOS.forEach(([apId,lbl])=>{
       const v=parseInt(r.cuant?.[lbl])||parseInt(r[apId])||0;
       if(v>0){
         const cb=document.getElementById('ap-cb-'+apId);
         const cnt=document.getElementById('ap-cnt-'+apId);
         const body=document.getElementById('ap-body-'+apId);
-        if(cb){cb.checked=true;}
-        if(cnt){cnt.value=v; cnt.textContent=v;}
-        if(body){body.style.display='block';}
+        if(cb){ cb.checked=true; }
+        if(cnt){ cnt.value=v; cnt.textContent=v; }
+        if(body){ body.style.display='block'; }
       }
     });
-    window._editandoM1=id;
-    // Cambiar botón guardar para indicar edición
-    const btnGuardar=document.querySelector('[onclick="guardarM1()"]');
-    if(btnGuardar){
-      btnGuardar.textContent='💾 Actualizar Reporte';
-      btnGuardar.style.background='var(--dorado)';
-    }
+
     toast('✏️ Reporte '+id+' cargado. Modifique y guarde.','warning');
-    // Scroll al inicio del formulario
-    contNuevo.scrollIntoView({behavior:'smooth',block:'start'});
-  },150);
+    if(contNuevo) contNuevo.scrollIntoView({behavior:'smooth',block:'start'});
+  },200);
 }
 
 async function eliminarM1(id){
@@ -2829,18 +2839,38 @@ function renderChartDash(mod){
       options:{
         responsive:true,
         maintainAspectRatio:false,
+        animation:{
+          onComplete:function(){
+            const chart=this;
+            const ctx=chart.ctx;
+            ctx.save();
+            ctx.font='bold 11px Arial';
+            ctx.fillStyle='#1a3a5c';
+            ctx.textAlign='center';
+            ctx.textBaseline='bottom';
+            chart.data.datasets.forEach(function(dataset,i){
+              const meta=chart.getDatasetMeta(i);
+              meta.data.forEach(function(bar,idx){
+                const v=dataset.data[idx];
+                const pct=((v/total)*100).toFixed(1);
+                if(v>0){
+                  ctx.fillText(v+' ('+pct+'%)', bar.x, bar.y-3);
+                }
+              });
+            });
+            ctx.restore();
+          }
+        },
         plugins:{
           legend:{display:false},
           tooltip:{
             callbacks:{
               label:ctx=>{
-                const v=ctx.raw;
-                const pct=((v/total)*100).toFixed(1);
-                return ` ${v} (${pct}%)`;
+                const pct=((ctx.raw/total)*100).toFixed(1);
+                return ' '+ctx.raw+' ('+pct+'%)';
               }
             }
-          },
-          datalabels:{display:false}
+          }
         },
         scales:{
           y:{beginAtZero:true,ticks:{stepSize:1}},
@@ -3052,46 +3082,65 @@ function mkChart(canvasId,tipo,labels,data,colors){
 // OBS 2: ESTADÍSTICAS M1
 // ============================================
 function renderStatsM1(){
-  const cont=document.getElementById('wf-mod1-stats');
+  const cont=document.getElementById('stats-m1-cont');
   if(!cont)return;
   const datos=D.m1||[];
   if(!datos.length){
-    cont.innerHTML='<div class="card"><div class="card-header"><div class="card-titulo">📊 Estadísticas — Reporte Diario</div></div><div class="alert" style="margin:16px;">No hay reportes registrados.</div></div>';
+    cont.innerHTML='<div class="alert alert-info">No hay reportes registrados.</div>';
     return;
   }
   const totales={};
   AP_CAMPOS.forEach(([apId,lbl])=>{ totales[lbl]=0; });
-  datos.forEach(r=>{
+  // Aplicar filtros
+  const desde=document.getElementById('m1-stats-desde')?.value||'';
+  const hasta=document.getElementById('m1-stats-hasta')?.value||'';
+  const filtOficial=document.getElementById('m1-stats-oficial')?.value||'';
+  const filtMovil=document.getElementById('m1-stats-movil')?.value||'';
+  let filtrados=datos.filter(r=>{
+    if(desde && r.fi && r.fi < desde) return false;
+    if(hasta && r.fi && r.fi > hasta) return false;
+    if(filtOficial && !(r.grupo||[]).some(g=>(g.n||g)===filtOficial)) return false;
+    if(filtMovil && r.movil!==filtMovil) return false;
+    return true;
+  });
+  if(!filtrados.length){
+    cont.innerHTML='<div class="alert alert-warning">No hay reportes con los filtros seleccionados.</div>';
+    return;
+  }
+  filtrados.forEach(r=>{
     AP_CAMPOS.forEach(([apId,lbl])=>{
       totales[lbl]=(totales[lbl]||0)+(parseInt(r.cuant?.[lbl])||parseInt(r[apId])||0);
     });
   });
+  const total=Object.values(totales).reduce((a,b)=>a+b,0)||1;
   const totAbord=totales['PERSONAS ABORDADAS']||0;
   const totDet=totales['PERSONAS DETENIDAS']||0;
   const totCap=totales['CAPTURAS PENALES']||0;
   const totVeh=totales['VEHÍCULOS ABORDADOS']||0;
-  const total=Object.values(totales).reduce((a,b)=>a+b,0)||1;
   const filas=AP_CAMPOS.map(([apId,lbl])=>{
     const v=totales[lbl]||0;
     if(!v) return '';
     const pct=((v/total)*100).toFixed(1);
-    return `<tr><td>${lbl}</td><td style="text-align:center;font-weight:700;">${v}</td><td style="text-align:center;color:#666;">${pct}%</td></tr>`;
+    return `<tr><td style="padding:4px 8px;border:1px solid #e2e8f0;">${lbl}</td>
+      <td style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center;font-weight:700;">${v}</td>
+      <td style="padding:4px 8px;border:1px solid #e2e8f0;text-align:center;color:#666;">${pct}%</td></tr>`;
   }).join('');
   cont.innerHTML=`
-  <div class="card">
-    <div class="card-header"><div class="card-titulo">📊 Estadísticas — Reporte Diario (${datos.length} reportes)</div></div>
-    <div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:14px;">
-      <div class="stat-card azul"><div class="stat-val">${datos.length}</div><div class="stat-lbl">Total Reportes</div></div>
-      <div class="stat-card dorado"><div class="stat-val">${totAbord}</div><div class="stat-lbl">Personas Abordadas</div></div>
-      <div class="stat-card verde"><div class="stat-val">${totDet}</div><div class="stat-lbl">Personas Detenidas</div></div>
-      <div class="stat-card purp"><div class="stat-val">${totCap}</div><div class="stat-lbl">Capturas Penales</div></div>
-      <div class="stat-card"><div class="stat-val">${totVeh}</div><div class="stat-lbl">Vehículos Abordados</div></div>
-    </div>
-    <table class="tabla" style="width:100%;margin:0 0 14px;">
-      <thead><tr><th>Acción Policial</th><th style="text-align:center;">Total</th><th style="text-align:center;">%</th></tr></thead>
-      <tbody>${filas||'<tr><td colspan=3 style="text-align:center;color:#999;">Sin acciones registradas</td></tr>'}</tbody>
-    </table>
-  </div>`;
+  <div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:16px;">
+    <div class="stat-card azul"><div class="stat-val">${filtrados.length}</div><div class="stat-lbl">Reportes</div></div>
+    <div class="stat-card dorado"><div class="stat-val">${totAbord}</div><div class="stat-lbl">Pers. Abordadas</div></div>
+    <div class="stat-card verde"><div class="stat-val">${totDet}</div><div class="stat-lbl">Detenidas</div></div>
+    <div class="stat-card purp"><div class="stat-val">${totCap}</div><div class="stat-lbl">Capturas Penales</div></div>
+    <div class="stat-card"><div class="stat-val">${totVeh}</div><div class="stat-lbl">Veh. Abordados</div></div>
+  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <thead><tr style="background:#1a3a5c;color:white;">
+      <th style="padding:6px 8px;text-align:left;">Acción Policial</th>
+      <th style="padding:6px 8px;text-align:center;">Total</th>
+      <th style="padding:6px 8px;text-align:center;">%</th>
+    </tr></thead>
+    <tbody>${filas||'<tr><td colspan=3 style="text-align:center;color:#999;padding:12px;">Sin acciones registradas</td></tr>'}</tbody>
+  </table>`;
 }
 
 // ============================================
@@ -3272,8 +3321,8 @@ function renderStatsM2(){
   }
   // Filtrar registros
   let datos=D.m2.filter(r=>{
-    if(desde&&r.fecha<desde) return false;
-    if(hasta&&r.fecha>hasta) return false;
+    if(desde&&r.fecha&&r.fecha<desde) return false;
+    if(hasta&&r.fecha&&r.fecha>hasta) return false;
     if(filtOficial&&r.oficial!==filtOficial) return false;
     if(filtDir&&r.dirigido!==filtDir) return false;
     return true;
@@ -3899,9 +3948,10 @@ async function guardarM2() {
   const payload={fecha:document.getElementById('m2-fecha').value,dirigido:document.getElementById('m2-dir').value,canton:document.getElementById('m2-canton').value,distrito:document.getElementById('m2-distrito').value,barrio:document.getElementById('m2-barrio').value,tipoLugar:document.getElementById('m2-lugar').value,dirExacta:document.getElementById('m2-dir-exacta').value,hora:document.getElementById('m2-hora').value,hechos:document.getElementById('m2-hechos').value,diligencias:document.getElementById('m2-dilig').value,oficial:document.getElementById('m2-act').value,cedulaOficial:document.getElementById('m2-act-ced').value,imputados,ofendidos,asistentes,docs,u:UA.nombre};
   try {
     if(esEdicion){
-      await gasPost({...payload,mod:'m2',action:'editar',id:window._editandoParte});
-      const idx=D.m2.findIndex(x=>x.id===window._editandoParte);
-      if(idx>=0)D.m2[idx]={...D.m2[idx],...payload};
+      const editId=window._editandoParte;
+      await gasPost({...payload,mod:'m2',action:'editar',id:editId});
+      const idx=D.m2.findIndex(x=>String(x.id)===String(editId));
+      if(idx>=0) D.m2[idx]={...D.m2[idx],...payload,id:editId};
       window._editandoParte=null;
       const btn=document.querySelector('[onclick="guardarM2()"]');
       if(btn){btn.textContent='💾 Guardar';btn.style.background='';}
