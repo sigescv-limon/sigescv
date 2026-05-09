@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="version" content="3.2-202605080503">
+<meta name="version" content="3.3-202605090514">
 <title>SIGESCV v2.0 — Policía Municipal de Limón</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -2395,18 +2395,45 @@ function imprimirM1(){
 function imprimirM1Reg(id){
   const r=D.m1.find(x=>String(x.id)===String(id));
   if(!r){toast('Reporte no encontrado','danger');return;}
-  // Cargar en D.m1[0] temporalmente y usar imprimirM1 con datos del registro
   const grupo=Array.isArray(r.grupo)?r.grupo.map(g=>g.n||g):[];
   const consec=r.id||'';
+  // Parsear acciones si viene como string
+  let accData={};
+  if(r.acciones){
+    const arr=Array.isArray(r.acciones)?r.acciones:(typeof r.acciones==='string'?JSON.parse(r.acciones||'[]'):[]);
+    if(Array.isArray(arr)) arr.forEach(a=>{ if(a.lbl)accData[a.lbl]=a; });
+    else if(typeof r.acciones==='object') accData=r.acciones;
+  }
   let apItems='';
   AP_CAMPOS.forEach(([apId,lbl])=>{
     const v=parseInt(r.cuant?.[lbl])||parseInt(r[apId])||0;
-    if(v>0) apItems+=`<li style="margin-bottom:4px;"><strong>${lbl}:</strong> ${v}</li>`;
+    if(!v) return;
+    let det='';
+    const a=accData[lbl]||accData[apId];
+    if(a?.detalle){
+      const d=a.detalle;
+      // Ítems múltiples (droga, arma, patrullaje)
+      if(d.items&&d.items.length){
+        det='<ul style="margin:2px 0 0 14px;font-size:10pt;">';
+        d.items.forEach(it=>{
+          if(it.tipo&&it.pres) det+=`<li>${it.tipo} — ${it.pres}: ${it.cant||0}</li>`;
+          else if(it.tipo&&it.modelo) det+=`<li>${it.tipo} ${it.modelo}: ${it.cant||1}</li>`;
+          else if(it.tipo) det+=`<li>${it.tipo}: ${it.cant||0}</li>`;
+          else if(it.dist) det+=`<li>${it.dist} — ${it.hora||''} ${it.zonas?'('+it.zonas+')':''}</li>`;
+        });
+        det+='</ul>';
+      }
+      // Licor (desc libre)
+      if(d.desc) det+=` — ${d.desc}`;
+      if(d.cant&&!d.items) det+=` — Cantidad: ${d.cant}`;
+      if(d.obs) det+=` — ${d.obs}`;
+      if(d.lugares) det+=` — ${d.lugares}`;
+    }
+    apItems+=`<li style="margin-bottom:4px;"><strong>${lbl}:</strong> ${v}${det}</li>`;
   });
   const decItems=Array.isArray(r.decomisos)?r.decomisos.filter(d=>d.cat).map(d=>`<li><strong>${d.cat}</strong>${d.tipo?' — '+d.tipo:''}: ${d.cant||1}</li>`).join(''):'';
   const docsItems=TIPOS_DOC.map(t=>{const v=parseInt(r.docs?.[t.l])||parseInt(r[t.id])||0;return v>0?`<strong>${t.l}:</strong> ${v}`:null;}).filter(Boolean).join(' | ');
-  const colab=r.colab||'';
-  const nov=r.novedades||'';
+  const colab=r.colab||''; const nov=r.novedades||'';
   print2(`<div style="max-width:100%;font-family:Arial,sans-serif;font-size:11pt;">
     <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a3a5c;padding-bottom:10px;margin-bottom:14px;">
       <img src="${I_PML}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
@@ -2431,14 +2458,14 @@ function imprimirM1Reg(id){
         <td style="padding:4px 6px;border:1px solid #ddd;"><strong>Supervisor:</strong> ${r.supervisor||''}</td>
       </tr>
     </table>
-    ${grupo.length?`<p style="margin:6px 0 4px;"><strong>GRUPO DE TRABAJO:</strong></p><p style="margin:0 0 10px;">${grupo.join(' &nbsp;|&nbsp; ')}</p>`:''}
+    ${grupo.length?`<p style="margin:6px 0 4px;"><strong>GRUPO DE TRABAJO:</strong></p><p style="margin:0 0 10px;">${grupo.join(' | ')}</p>`:''}
     ${apItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">ACCIONES POLICIALES REALIZADAS</p><ul style="margin:4px 0 10px;padding-left:18px;">${apItems}</ul>`:''}
     ${colab?`<p style="margin:6px 0 2px;font-weight:700;color:#1a3a5c;">COLABORACIÓN A OTROS DEPARTAMENTOS</p><p style="margin:0 0 8px;text-align:justify;">${colab}</p>`:''}
     ${decItems?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">DECOMISOS</p><ul style="margin:4px 0 10px;padding-left:18px;">${decItems}</ul>`:''}
     ${docsItems?`<p style="margin:8px 0 3px;font-weight:700;color:#1a3a5c;">DOCUMENTOS REALIZADOS</p><p style="margin:0 0 8px;font-size:10pt;">${docsItems}</p>`:''}
-    ${nov?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">NOVEDADES POR RANGO DE HORAS</p><p style="margin:0 0 14px;text-align:justify;line-height:1.7;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;">${nov.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`:''}
+    ${nov?`<p style="margin:10px 0 4px;font-weight:700;color:#1a3a5c;border-bottom:1px solid #c9942a;padding-bottom:2px;">NOVEDADES POR RANGO DE HORAS</p><p style="margin:0 0 14px;text-align:justify;line-height:1.7;white-space:pre-wrap;word-break:break-word;">${nov.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`:''}
     <div style="margin-top:30px;display:flex;flex-wrap:wrap;gap:20px;">
-      ${grupo.map(n=>`<div style="min-width:180px;flex:1;text-align:center;"><div style="height:50px;border-bottom:1px solid #333;margin-bottom:5px;"></div><div style="font-size:11pt;font-weight:600;">${n}</div><div style="font-size:9pt;color:#666;">Oficial de Policía Municipal</div></div>`).join('')}
+      ${grupo.map(n=>`<div style="min-width:180px;flex:1;text-align:center;"><div style="height:50px;border-bottom:1px solid #333;margin-bottom:5px;"></div><div style="font-size:11pt;font-weight:600;">${n}</div><div style="font-size:9pt;color:#666;">Oficial PML</div></div>`).join('')}
     </div>
     <div style="text-align:center;margin-top:18px;font-size:9pt;color:#999;border-top:1px solid #ddd;padding-top:6px;">"Limón Ciudad de la Vida" · ${consec}</div>
   </div>`);
@@ -2908,69 +2935,10 @@ function renderChartDash(mod){
 }
 
 // RENDICIÓN
-function previsualizarInforme(){const oficio=document.getElementById('m6-oficio').value||'OF-XXX-GSCV-2026';const desde=document.getElementById('m6-desde')?.value||hoy();const hasta=document.getElementById('m6-hasta')?.value||hoy();const dirigido=document.getElementById('m6-dirigido').value;const just=document.getElementById('m6-just').value;const inc={i1:document.getElementById('m6-i1')?.checked,i2:document.getElementById('m6-i2')?.checked,i3:document.getElementById('m6-i3')?.checked,i4:document.getElementById('m6-i4')?.checked,i7:document.getElementById('m6-i7')?.checked};let secs='';let ns=1;const indices=[];if(inc.i1||inc.i2){indices.push({n:ns,t:'Policía Municipal'});secs+=`<h3 style="color:#1a3a5c;border-left:4px solid #c9942a;padding-left:12px;margin:18px 0 10px;">Sección ${ns++} — Policía Municipal de Limón</h3><p style="text-align:justify;line-height:1.8;">Durante el período <strong>${desde}</strong> al <strong>${hasta}</strong>, la Policía Municipal de Limón registró <strong>${D.m1.length}</strong> reportes diarios de labores y <strong>${D.m2.length}</strong> partes policiales, reflejando una gestión operativa sostenida en el cantón.</p>`;}if(inc.i3){indices.push({n:ns,t:'Centro de Video Protección'});secs+=`<h3 style="color:#1a3a5c;border-left:4px solid #c9942a;padding-left:12px;margin:18px 0 10px;">Sección ${ns++} — Centro de Video Protección</h3><p style="text-align:justify;line-height:1.8;">El Departamento de Seguridad Electrónica generó <strong>${D.m3a.length}</strong> bitácoras de turno con <strong>${D.m3a.reduce((s,r)=>s+(r.incidentes?.length||0),0)}</strong> incidentes documentados. Se tramitaron <strong>${D.m3b.length}</strong> solicitudes de secuestro de video de distintas instituciones.</p>`;}if(inc.i4){const tEst=D.m4.reduce((s,r)=>s+r.est,0);indices.push({n:ns,t:'Programas Preventivos'});secs+=`<h3 style="color:#1a3a5c;border-left:4px solid #c9942a;padding-left:12px;margin:18px 0 10px;">Sección ${ns++} — Programas Preventivos</h3><p style="text-align:justify;line-height:1.8;">Se realizaron <strong>${D.m4.length}</strong> visitas a centros educativos, capacitando a <strong>${fmt(tEst)}</strong> estudiantes mediante los programas GREAT y Yo Digo NO a las Drogas.</p>`;}if(inc.i7){const tInf=D.m7.reduce((s,r)=>s+r.inf,0);const tMonto=D.m7.reduce((s,r)=>s+r.monto,0);indices.push({n:ns,t:'Estacionómetros'});secs+=`<h3 style="color:#1a3a5c;border-left:4px solid #c9942a;padding-left:12px;margin:18px 0 10px;">Sección ${ns++} — Departamento de Estacionómetros</h3><p style="text-align:justify;line-height:1.8;">Se registraron <strong>${fmt(tInf)}</strong> infracciones de tránsito por un monto total de <strong>₡${fmt(tMonto)}</strong>.</p>`;}const conclusion=generarConclusionRobusta(desde,hasta);const useSello=UA.r==='admin';document.getElementById('m6-preview').style.display='block';document.getElementById('m6-preview').innerHTML=`<div class="card" style="border-top:4px solid var(--dorado);"><div style="text-align:center;padding:30px 20px;border-bottom:2px solid #1a3a5c;margin-bottom:24px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;"><img src="${I_MUNI}" style="height:85px;"><div style="flex:1;padding:0 20px;"><div style="font-size:11px;font-weight:700;color:var(--texto-sec);text-transform:uppercase;">Municipalidad del Cantón Central de Limón</div><div style="font-weight:700;font-size:15px;color:var(--azul);">Gestión de Seguridad Ciudadana y Vial</div><div style="font-size:13px;color:var(--texto-sec);">${oficio}</div></div><img src="${useSello?I_SELLO:I_PML}" style="height:85px;"></div><h1 style="font-family:Rajdhani,sans-serif;font-size:22px;color:var(--azul);">INFORME DE RENDICIÓN DE CUENTAS</h1><p style="font-size:14px;color:var(--texto-sec);">Período: ${desde} al ${hasta}</p><p style="font-size:13px;"><strong>Para:</strong> ${dirigido}</p></div><h3 style="color:var(--azul);margin-bottom:10px;">Tabla de Contenido</h3><div style="margin-bottom:20px;padding:14px;background:var(--fondo);border-radius:8px;">${[{n:0,t:'Justificación'},...indices,{n:ns,t:'Conclusión'}].map(i=>`<div style="display:flex;padding:4px 0;border-bottom:1px dotted #ddd;font-size:13px;"><span>${i.n?`Sección ${i.n} — `:''}${i.t}</span></div>`).join('')}</div><h3 style="color:#1a3a5c;border-left:4px solid #c9942a;padding-left:12px;margin:18px 0 10px;">Justificación</h3><p style="text-align:justify;line-height:1.8;">${just||'Por medio del presente informe se remiten las labores desarrolladas por los departamentos adscritos a la Gestión de Seguridad Ciudadana y Vial.'}</p>${secs}<h3 style="color:#1a3a5c;border-left:4px solid #c9942a;padding-left:12px;margin:18px 0 10px;">Conclusión</h3><div style="line-height:1.8;text-align:justify;">${conclusion}</div><div style="margin-top:30px;text-align:center;">
-  <img src="${I_SELLO}" style="height:80px;opacity:0.9;mix-blend-mode:multiply;">
-  <div style="width:55%;margin:18px auto 0;">
-    <div style="height:55px;border-bottom:1px solid #333;margin-bottom:6px;"></div>
-    <strong style="font-size:13px;">Lic. Jeison Arce Campos</strong><br>
-    <span style="color:#666;font-size:11px;">Gestor de Seguridad Ciudadana y Vial<br>Municipalidad del Cantón Central de Limón</span>
-  </div>
-</div><div style="text-align:center;margin-top:14px;font-size:11px;color:#999;">"Limón Ciudad de la Vida"</div></div>`;}
-function generarConclusionRobusta(desde,hasta){const parrafos=[];if(!D.m1.length&&!D.m2.length&&!D.m3a.length&&!D.m4.length&&!D.m7.length)return'<p style="color:#999;">No hay datos registrados. Complete los registros antes de generar la conclusión.</p>';if(D.m1.length||D.m2.length){const tDet=D.m1.reduce((s,r)=>s+(r.cuant?.['Personas Detenidas']||0),0);const tAbord=D.m1.reduce((s,r)=>s+(r.cuant?.['Personas Abordadas']||0),0);parrafos.push(`<p style="margin-bottom:10px;">La Policía Municipal de Limón evidenció una presencia operativa constante con <strong>${D.m1.length}</strong> reportes diarios y <strong>${D.m2.length}</strong> partes policiales. ${tAbord>0?`Se abordaron <strong>${fmt(tAbord)}</strong> personas en labores de control de campo.`:''}${tDet>0?` Se ejecutaron <strong>${tDet}</strong> detenciones, reflejando la gestión activa en el mantenimiento del orden público.`:''}</p>`);}if(D.m3a.length){const tIncs=D.m3a.reduce((s,r)=>s+(r.incidentes?.length||0),0);parrafos.push(`<p style="margin-bottom:10px;">El Centro de Video Protección operó de forma ininterrumpida, registrando <strong>${D.m3a.length}</strong> bitácoras con <strong>${tIncs}</strong> incidentes documentados y tramitando <strong>${D.m3b.length}</strong> solicitudes de secuestro de video.</p>`);}if(D.m4.length){const tEst=D.m4.reduce((s,r)=>s+r.est,0);parrafos.push(`<p style="margin-bottom:10px;">La Unidad de Programas Preventivos realizó <strong>${D.m4.length}</strong> visitas capacitando a <strong>${fmt(tEst)}</strong> estudiantes, consolidando el compromiso institucional con la prevención desde los centros educativos.</p>`);}if(D.m7.length){const tInf=D.m7.reduce((s,r)=>s+r.inf,0);const tMonto=D.m7.reduce((s,r)=>s+r.monto,0);parrafos.push(`<p style="margin-bottom:10px;">El Departamento de Estacionómetros registró <strong>${fmt(tInf)}</strong> infracciones generando <strong>₡${fmt(tMonto)}</strong> en ingresos municipales.</p>`);}parrafos.push(`<p>Los resultados del período <strong>${desde}</strong> al <strong>${hasta}</strong> demuestran el compromiso de la Gestión de Seguridad Ciudadana y Vial con el fortalecimiento de la seguridad y convivencia ciudadana en el Cantón Central de Limón. Los datos consignados en este informe constituyen evidencia objetiva del desempeño institucional de cada uno de sus departamentos.</p>`);return parrafos.join('');}
-function imprimirInforme(){previsualizarInforme();setTimeout(()=>{print2(document.getElementById('m6-preview').innerHTML);},400);}
-function exportarWord(){previsualizarInforme();setTimeout(()=>{const content=document.getElementById('m6-preview').innerHTML;const html=`<html xmlns:o='urn:schemas-microsoft-com:office:office'><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;font-size:12pt;}p{text-align:justify;line-height:1.6;}
-/* ── ACCIONES POLICIALES REALIZADAS ─────────────────────── */
-.accion-policial{
-  border:1px solid var(--gris-borde);border-radius:8px;
-  margin-bottom:6px;overflow:hidden;background:var(--fondo-card);
-}
-.ap-header{
-  display:flex;align-items:center;gap:10px;padding:10px 14px;
-  cursor:pointer;user-select:none;
-  background:rgba(26,58,92,0.04);
-  transition:background 0.15s;
-}
-.ap-header:hover{background:rgba(26,58,92,0.09);}
-.ap-header input[type=checkbox]{
-  width:16px;height:16px;cursor:pointer;flex-shrink:0;
-  accent-color:var(--azul);
-}
-.ap-label{
-  flex:1;font-family:'Rajdhani',sans-serif;font-size:13px;
-  font-weight:700;color:var(--azul);text-transform:uppercase;
-  letter-spacing:0.3px;
-}
-.ap-cnt{
-  width:72px!important;padding:4px 8px!important;
-  border:1.5px solid var(--gris-borde)!important;
-  border-radius:6px!important;font-size:13px!important;
-  font-weight:700;text-align:center;background:white;
-}
-.ap-cnt-auto{
-  background:var(--azul-claro);color:var(--azul);
-  padding:3px 12px;border-radius:6px;font-size:13px;
-  font-weight:700;min-width:44px;text-align:center;
-}
-.ap-body{
-  padding:12px 14px;border-top:1px solid var(--gris-borde);
-  background:rgba(255,255,255,0.6);
-}
-.ap-detalle-item{
-  background:rgba(26,58,92,0.04);border:1px solid var(--gris-borde);
-  border-radius:6px;padding:10px 12px;margin-bottom:8px;position:relative;
-}
-.ap-detalle-item .btn-quitar{
-  position:absolute;top:8px;right:8px;
-  background:rgba(139,26,26,0.1);border:none;
-  color:#8b1a1a;padding:2px 8px;border-radius:4px;
-  font-size:11px;cursor:pointer;
-}
-.ap-detalle-item .btn-quitar:hover{background:rgba(139,26,26,0.2);}
-.ap-obligatorio{
-  border-left:3px solid var(--dorado)!important;
-}
 
-</style></head><body>${content}</body></html>`;const blob=new Blob(['\ufeff',html],{type:'application/msword'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`Informe-Rendicion-${document.getElementById('m6-oficio').value||'informe'}-${hoy()}.doc`;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);toast('📄 Exportado como Word');},400);}
+function generarConclusionRobusta(desde,hasta){const parrafos=[];if(!D.m1.length&&!D.m2.length&&!D.m3a.length&&!D.m4.length&&!D.m7.length)return'<p style="color:#999;">No hay datos registrados. Complete los registros antes de generar la conclusión.</p>';if(D.m1.length||D.m2.length){const tDet=D.m1.reduce((s,r)=>s+(r.cuant?.['Personas Detenidas']||0),0);const tAbord=D.m1.reduce((s,r)=>s+(r.cuant?.['Personas Abordadas']||0),0);parrafos.push(`<p style="margin-bottom:10px;">La Policía Municipal de Limón evidenció una presencia operativa constante con <strong>${D.m1.length}</strong> reportes diarios y <strong>${D.m2.length}</strong> partes policiales. ${tAbord>0?`Se abordaron <strong>${fmt(tAbord)}</strong> personas en labores de control de campo.`:''}${tDet>0?` Se ejecutaron <strong>${tDet}</strong> detenciones, reflejando la gestión activa en el mantenimiento del orden público.`:''}</p>`);}if(D.m3a.length){const tIncs=D.m3a.reduce((s,r)=>s+(r.incidentes?.length||0),0);parrafos.push(`<p style="margin-bottom:10px;">El Centro de Video Protección operó de forma ininterrumpida, registrando <strong>${D.m3a.length}</strong> bitácoras con <strong>${tIncs}</strong> incidentes documentados y tramitando <strong>${D.m3b.length}</strong> solicitudes de secuestro de video.</p>`);}if(D.m4.length){const tEst=D.m4.reduce((s,r)=>s+r.est,0);parrafos.push(`<p style="margin-bottom:10px;">La Unidad de Programas Preventivos realizó <strong>${D.m4.length}</strong> visitas capacitando a <strong>${fmt(tEst)}</strong> estudiantes, consolidando el compromiso institucional con la prevención desde los centros educativos.</p>`);}if(D.m7.length){const tInf=D.m7.reduce((s,r)=>s+r.inf,0);const tMonto=D.m7.reduce((s,r)=>s+r.monto,0);parrafos.push(`<p style="margin-bottom:10px;">El Departamento de Estacionómetros registró <strong>${fmt(tInf)}</strong> infracciones generando <strong>₡${fmt(tMonto)}</strong> en ingresos municipales.</p>`);}parrafos.push(`<p>Los resultados del período <strong>${desde}</strong> al <strong>${hasta}</strong> demuestran el compromiso de la Gestión de Seguridad Ciudadana y Vial con el fortalecimiento de la seguridad y convivencia ciudadana en el Cantón Central de Limón. Los datos consignados en este informe constituyen evidencia objetiva del desempeño institucional de cada uno de sus departamentos.</p>`);return parrafos.join('');}
+
+
 
 
 // ADMINISTRACIÓN
@@ -2994,7 +2962,13 @@ function eliminarTodo(){pendingDel={tipo:'todo'};document.getElementById('modal-
 
 // RENDER TABLAS
 function renderAll(){['m1','m2','m3a','m4','m7'].forEach(m=>renderTabla(m));INST_SECUESTROS.forEach(i=>renderSecuestros(i.id));}
-function renderTabla(mod){const tM={manana:'06:00-14:00',tarde:'14:00-22:00',noche:'22:00-06:00'};if(mod==='m1'){const tbody=document.getElementById('tbody-m1');if(!tbody)return;tbody.innerHTML=D.m1.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.fi||''}</td><td>${r.ff||''}</td><td style="font-size:12px;">${(r.grupo||[]).slice(0,2).map(g=>g.n?.split(' ')[0]).join(', ')}${(r.grupo||[]).length>2?`+${(r.grupo||[]).length-2}`:''}</td><td>${r.movil||'—'}</td><td style="white-space:nowrap;"><button class="btn btn-primary btn-sm" onclick="imprimirM1Reg('${r.id}')" title="Imprimir">🖨️</button> <button class="btn btn-warning btn-sm" onclick="editarM1('${r.id}')" title="Editar">✏️</button> <button class="btn btn-danger btn-sm" onclick="eliminarM1('${r.id}')" title="Eliminar">🗑️</button></td></tr>`).join('')||noData(6);}if(mod==='m2'){renderTablaM2ConAcceso();return;}if(mod==='m3a'){const tbody=document.getElementById('tbody-m3a');if(!tbody)return;tbody.innerHTML=D.m3a.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.fi||''}</td><td>${r.ff||''}</td><td>${tM[r.turno]||r.turno}</td><td style="font-size:12px;">${r.op?.split('—')[1]?.trim()||r.op}</td><td><span class="badge badge-dorado">${r.incidentes?.length||0}</span></td><td><button class="btn btn-secondary btn-sm" onclick="verBitacora('${r.id}')" title="Ver">👁️</button> <button class="btn btn-warning btn-sm" onclick="editarBitacora('${r.id}')" title="Editar">✏️</button> <button class="btn btn-primary btn-sm" onclick="imprimirBitacoraId('${r.id}')" title="Imprimir">🖨️</button> <button class="btn btn-danger btn-sm" onclick="eliminarBitacora('${r.id}')" title="Eliminar">🗑️</button></td></tr>`).join('')||noData(7);}if(mod==='m4'){const tbody=document.getElementById('tbody-m4');if(!tbody)return;tbody.innerHTML=D.m4.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.fecha}</td><td style="font-size:12px;">${r.oficial?.split(' ')[0]}</td><td>${r.centro}</td><td><span class="badge badge-verde">${r.prog}</span></td><td>${r.nivel}</td><td style="text-align:center;font-weight:700;">${r.est}</td><td>${r.cierre==='si'?'<span class="badge badge-dorado">⭐</span>':'—'}</td><td><button class="btn btn-warning btn-sm" onclick="editarM4('${r.id}')">✏️</button></td></tr>`).join('')||noData(9);}if(mod==='m7'){const tbody=document.getElementById('tbody-m7');if(!tbody)return;tbody.innerHTML=D.m7.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.mesNom} ${r.anio}</td><td style="text-align:right;font-weight:700;">${fmt(r.inf)}</td><td style="text-align:right;">₡${fmt(r.monto)}</td><td style="text-align:center;">${r.napel}</td><td><button class="btn btn-warning btn-sm" onclick="imprimirM7()">🖨️</button></td></tr>`).join('')||noData(6);}if(mod==='aud'){const tbody=document.getElementById('tbody-aud');if(!tbody)return;tbody.innerHTML=D.aud.slice().reverse().slice(0,50).map(a=>`<tr><td style="font-size:11px;">${a.ts}</td><td>${a.u}</td><td>${a.accion}</td><td>${a.modulo}</td><td style="font-size:12px;">${a.detalle}</td></tr>`).join('')||noData(5);}}
+function renderTabla(mod){const tM={manana:'06:00-14:00',tarde:'14:00-22:00',noche:'22:00-06:00'};if(mod==='m1'){const tbody=document.getElementById('tbody-m1');if(!tbody)return;tbody.innerHTML=D.m1.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.fi||''}</td><td>${r.ff||''}</td><td style="font-size:12px;">${(r.grupo||[]).slice(0,2).map(g=>g.n?.split(' ')[0]).join(', ')}${(r.grupo||[]).length>2?`+${(r.grupo||[]).length-2}`:''}</td><td>${r.movil||'—'}</td><td style="white-space:nowrap;"><button class="btn btn-primary btn-sm" onclick="imprimirM1Reg('${r.id}')" title="Imprimir">🖨️</button> <button class="btn btn-warning btn-sm" onclick="editarM1('${r.id}')" title="Editar">✏️</button> <button class="btn btn-danger btn-sm" onclick="eliminarM1('${r.id}')" title="Eliminar">🗑️</button></td></tr>`).join('')||noData(6);}if(mod==='m2'){renderTablaM2ConAcceso();return;}if(mod==='m3a'){const tbody=document.getElementById('tbody-m3a');if(!tbody)return;tbody.innerHTML=D.m3a.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.fi||''}</td><td>${r.ff||''}</td><td>${tM[r.turno]||r.turno}</td><td style="font-size:12px;">${r.op?.split('—')[1]?.trim()||r.op}</td><td><span class="badge badge-dorado">${r.incidentes?.length||0}</span></td><td><button class="btn btn-secondary btn-sm" onclick="verBitacora('${r.id}')" title="Ver">👁️</button> <button class="btn btn-warning btn-sm" onclick="editarBitacora('${r.id}')" title="Editar">✏️</button> <button class="btn btn-primary btn-sm" onclick="imprimirBitacoraId('${r.id}')" title="Imprimir">🖨️</button> <button class="btn btn-danger btn-sm" onclick="eliminarBitacora('${r.id}')" title="Eliminar">🗑️</button></td></tr>`).join('')||noData(7);}if(mod==='m4'){const tbody=document.getElementById('tbody-m4');if(!tbody)return;tbody.innerHTML=D.m4.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.fecha}</td><td style="font-size:12px;">${r.oficial?.split(' ')[0]}</td><td>${r.centro}</td><td><span class="badge badge-verde">${r.prog}</span></td><td>${r.nivel}</td><td style="text-align:center;font-weight:700;">${r.est}</td><td>${r.cierre==='si'?'<span class="badge badge-dorado">⭐</span>':'—'}</td><td><button class="btn btn-secondary btn-sm" onclick="verM4('${r.id}')" title="Ver">👁️</button>
+            <button class="btn btn-warning btn-sm" onclick="editarM4('${r.id}')" title="Editar">✏️</button>
+            <button class="btn btn-primary btn-sm" onclick="imprimirM4Reg('${r.id}')" title="Imprimir">🖨️</button>
+            <button class="btn btn-danger btn-sm" onclick="eliminarM4('${r.id}')" title="Eliminar">🗑️</button></td></tr>`).join('')||noData(9);}if(mod==='m7'){const tbody=document.getElementById('tbody-m7');if(!tbody)return;tbody.innerHTML=D.m7.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.mesNom} ${r.anio}</td><td style="text-align:right;font-weight:700;">${fmt(r.inf)}</td><td style="text-align:right;">₡${fmt(r.monto)}</td><td style="text-align:center;">${r.napel}</td><td><button class="btn btn-secondary btn-sm" onclick="verM7('${r.id}')" title="Ver">👁️</button>
+          <button class="btn btn-warning btn-sm" onclick="editarM7('${r.id}')" title="Editar">✏️</button>
+          <button class="btn btn-primary btn-sm" onclick="imprimirM7Reg('${r.id}')" title="Imprimir">🖨️</button>
+          <button class="btn btn-danger btn-sm" onclick="eliminarM7('${r.id}')" title="Eliminar">🗑️</button></td></tr>`).join('')||noData(6);}if(mod==='aud'){const tbody=document.getElementById('tbody-aud');if(!tbody)return;tbody.innerHTML=D.aud.slice().reverse().slice(0,50).map(a=>`<tr><td style="font-size:11px;">${a.ts}</td><td>${a.u}</td><td>${a.accion}</td><td>${a.modulo}</td><td style="font-size:12px;">${a.detalle}</td></tr>`).join('')||noData(5);}}
 
 
 
@@ -3078,49 +3052,46 @@ function mkChart(canvasId,tipo,labels,data,colors){
 // OBS 2: ESTADÍSTICAS M1
 // ============================================
 function renderStatsM1(){
-  const cont=document.getElementById('stats-m1');
+  const cont=document.getElementById('wf-mod1-stats');
   if(!cont)return;
   const datos=D.m1||[];
   if(!datos.length){
-    cont.innerHTML='<div class="alert">No hay reportes registrados.</div>';return;
+    cont.innerHTML='<div class="card"><div class="card-header"><div class="card-titulo">📊 Estadísticas — Reporte Diario</div></div><div class="alert" style="margin:16px;">No hay reportes registrados.</div></div>';
+    return;
   }
-
-  // Sumar todos los campos AP por etiqueta
   const totales={};
   AP_CAMPOS.forEach(([apId,lbl])=>{ totales[lbl]=0; });
-
   datos.forEach(r=>{
     AP_CAMPOS.forEach(([apId,lbl])=>{
-      const v = r.cuant?.[lbl] || parseInt(r[apId]) || 0;
-      totales[lbl] = (totales[lbl]||0) + v;
+      totales[lbl]=(totales[lbl]||0)+(parseInt(r.cuant?.[lbl])||parseInt(r[apId])||0);
     });
   });
-
-  // Resumen top
-  const totAbord = totales['PERSONAS ABORDADAS']||0;
-  const totDet   = totales['PERSONAS DETENIDAS']||0;
-  const totCap   = totales['CAPTURAS PENALES']||0;
-  const totVeh   = totales['VEHÍCULOS ABORDADOS']||0;
-  const totPat   = totales['PATRULLAJE PREVENTIVO']||0;
-
-  // Construir tabla
-  const filas = AP_CAMPOS.map(([apId,lbl])=>{
+  const totAbord=totales['PERSONAS ABORDADAS']||0;
+  const totDet=totales['PERSONAS DETENIDAS']||0;
+  const totCap=totales['CAPTURAS PENALES']||0;
+  const totVeh=totales['VEHÍCULOS ABORDADOS']||0;
+  const total=Object.values(totales).reduce((a,b)=>a+b,0)||1;
+  const filas=AP_CAMPOS.map(([apId,lbl])=>{
     const v=totales[lbl]||0;
-    return v>0?`<tr><td>${lbl}</td><td style="text-align:center;font-weight:700;">${v}</td></tr>`:'';
+    if(!v) return '';
+    const pct=((v/total)*100).toFixed(1);
+    return `<tr><td>${lbl}</td><td style="text-align:center;font-weight:700;">${v}</td><td style="text-align:center;color:#666;">${pct}%</td></tr>`;
   }).join('');
-
   cont.innerHTML=`
-  <div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px;">
-    <div class="stat-card"><div class="stat-val">${totAbord}</div><div class="stat-lbl">Personas Abordadas</div></div>
-    <div class="stat-card"><div class="stat-val">${totDet}</div><div class="stat-lbl">Personas Detenidas</div></div>
-    <div class="stat-card"><div class="stat-val">${totCap}</div><div class="stat-lbl">Capturas Penales</div></div>
-    <div class="stat-card"><div class="stat-val">${totVeh}</div><div class="stat-lbl">Vehículos Abordados</div></div>
-    <div class="stat-card"><div class="stat-val">${datos.length}</div><div class="stat-lbl">Total Reportes</div></div>
-  </div>
-  <table class="tabla" style="width:100%;">
-    <thead><tr><th>Acción Policial</th><th style="text-align:center;">Total</th></tr></thead>
-    <tbody>${filas||'<tr><td colspan=2>Sin datos</td></tr>'}</tbody>
-  </table>`;
+  <div class="card">
+    <div class="card-header"><div class="card-titulo">📊 Estadísticas — Reporte Diario (${datos.length} reportes)</div></div>
+    <div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:14px;">
+      <div class="stat-card azul"><div class="stat-val">${datos.length}</div><div class="stat-lbl">Total Reportes</div></div>
+      <div class="stat-card dorado"><div class="stat-val">${totAbord}</div><div class="stat-lbl">Personas Abordadas</div></div>
+      <div class="stat-card verde"><div class="stat-val">${totDet}</div><div class="stat-lbl">Personas Detenidas</div></div>
+      <div class="stat-card purp"><div class="stat-val">${totCap}</div><div class="stat-lbl">Capturas Penales</div></div>
+      <div class="stat-card"><div class="stat-val">${totVeh}</div><div class="stat-lbl">Vehículos Abordados</div></div>
+    </div>
+    <table class="tabla" style="width:100%;margin:0 0 14px;">
+      <thead><tr><th>Acción Policial</th><th style="text-align:center;">Total</th><th style="text-align:center;">%</th></tr></thead>
+      <tbody>${filas||'<tr><td colspan=3 style="text-align:center;color:#999;">Sin acciones registradas</td></tr>'}</tbody>
+    </table>
+  </div>`;
 }
 
 // ============================================
@@ -3212,8 +3183,10 @@ function renderTablaM2ConAcceso(){
       <td style="font-size:12px;">${r.oficial?.split(' ')[0]||''}</td>
       <td style="font-size:11px;color:var(--texto-sec);">${modStr}</td>
       <td>
-        <button class="btn btn-secondary btn-sm" onclick="verDetalleM2('${r.id}')">👁️</button>
-        ${puedeEditar?`<button class="btn btn-warning btn-sm" onclick="editarParteM2('${r.id}')">✏️</button>`:''}
+        <button class="btn btn-secondary btn-sm" onclick="verDetalleM2('${r.id}')" title="Ver">👁️</button>
+        ${puedeEditar?`<button class="btn btn-warning btn-sm" onclick="editarParteM2('${r.id}')" title="Editar">✏️</button>`:''}
+        <button class="btn btn-primary btn-sm" onclick="imprimirM2('${r.id}')" title="Imprimir">🖨️</button>
+        ${puedeEditar?`<button class="btn btn-danger btn-sm" onclick="eliminarParteM2('${r.id}')" title="Eliminar">🗑️</button>`:''}
       </td>
     </tr>`;
   }).join('');
@@ -3280,49 +3253,7 @@ function editarParteM2(id){
 // ============================================================
 // IMPRIMIR M2 SIN OFENDIDOS SI NO HAY DATOS
 // ============================================================
-function imprimirM2(){
-  if(!D.m2.length){toast('Guarde el parte primero','warning');return;}
-  const r=D.m2[0];
-  const consec=document.getElementById('c-m2').textContent;
-  const fmtPersona=(ps,tipo)=>{
-    const validas=ps.filter(p=>p.nom&&p.nom.trim());
-    if(!validas.length) return '';
-    return '<h4 style="color:#1a3a5c;margin:10px 0 6px;">'+(tipo==='imp'?'IMPUTADOS':'OFENDIDOS')+'</h4>'+
-    validas.map((p,i)=>`<table style="width:100%;font-size:11px;border-collapse:collapse;margin-bottom:8px;table-layout:fixed;">
-      <tr style="background:#1a3a5c;color:white;"><th colspan="4" style="padding:6px;text-align:left;">${tipo==='imp'?'Imputado':'Ofendido'} #${i+1}</th></tr>
-      <tr><td style="padding:4px;border:1px solid #ddd;word-break:break-word;"><strong>Nombre:</strong> ${p.nom}</td><td style="padding:4px;border:1px solid #ddd;"><strong>Cédula:</strong> ${p.ced}</td><td style="padding:4px;border:1px solid #ddd;"><strong>Sexo:</strong> ${p.sex}</td><td style="padding:4px;border:1px solid #ddd;"><strong>Edad:</strong> ${p.edad}</td></tr>
-      <tr><td style="padding:4px;border:1px solid #ddd;"><strong>Nac:</strong> ${p.nac}</td><td colspan="3" style="padding:4px;border:1px solid #ddd;word-break:break-word;"><strong>Dom:</strong> ${p.dom}</td></tr>
-      ${tipo==='imp'?`<tr><td style="padding:4px;border:1px solid #ddd;"><strong>Contextura:</strong> ${p.ctx||''}</td><td style="padding:4px;border:1px solid #ddd;"><strong>Estatura:</strong> ${p.est||''}</td><td style="padding:4px;border:1px solid #ddd;"><strong>Peso:</strong> ${p.peso||''}</td><td style="padding:4px;border:1px solid #ddd;"><strong>Aprehendido:</strong> ${p.apr||''}</td></tr><tr><td colspan="4" style="padding:4px;border:1px solid #ddd;word-break:break-word;"><strong>Vest/Tatuajes:</strong> ${p.vest||''} ${p.tat||''}</td></tr>`:'' }
-      <tr><td colspan="4" style="padding:4px;border:1px solid #ddd;"><strong>Firma:</strong> ${p.firma||''} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ___________________________</td></tr>
-    </table>`).join('');
-  };
-  const firmas=[{n:r.oficial,rol:'Oficial Actuante'},...(r.asistentes||[]).map(a=>({n:a.n,rol:'Oficial Asistente'}))].filter(f=>f.n);
-  const firmasHtml=firmas.map(f=>`<div style="display:inline-block;width:44%;margin:24px 2% 8px 2%;text-align:center;"><div style="height:55px;border-bottom:1px solid #333;margin-bottom:6px;"></div><div style="font-size:12px;font-weight:600;">${f.n}</div><div style="font-size:10px;color:#666;">${f.rol}</div></div>`).join('');
-  const ultimaMod = r.modificaciones&&r.modificaciones.length ? r.modificaciones[r.modificaciones.length-1] : null;
-  const modStr = ultimaMod ? `<p style="font-size:10px;color:#666;margin-top:4px;">Última modificación: ${ultimaMod.ts} por ${ultimaMod.user}</p>` : '';
-  print2(`<div style="max-width:800px;margin:0 auto;">
-    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a3a5c;padding-bottom:10px;margin-bottom:12px;">
-      <img src="${I_MUNI}" style="height:65px;mix-blend-mode:multiply;">
-      <div style="text-align:center;"><strong>MUNICIPALIDAD DEL CANTÓN CENTRAL DE LIMÓN</strong><br>POLICÍA MUNICIPAL DE LIMÓN<br><strong>PARTE POLICIAL — ${consec}</strong></div>
-      <img src="${I_PML}" style="height:65px;mix-blend-mode:multiply;">
-    </div>
-    <table style="width:100%;font-size:11px;border-collapse:collapse;margin-bottom:10px;table-layout:fixed;">
-      <tr><td style="padding:4px;border:1px solid #ddd;"><strong>Dirigido a:</strong> ${r.dirigido||''}</td><td style="padding:4px;border:1px solid #ddd;"><strong>Fecha:</strong> ${r.fecha||''}</td><td style="padding:4px;border:1px solid #ddd;"><strong>Hora:</strong> ${r.hora||''}</td></tr>
-      <tr><td style="padding:4px;border:1px solid #ddd;"><strong>Cantón:</strong> ${r.canton||''}</td><td style="padding:4px;border:1px solid #ddd;"><strong>Distrito:</strong> ${r.distrito||''}</td><td style="padding:4px;border:1px solid #ddd;"><strong>Tipo Lugar:</strong> ${r.tipoLugar||''}</td></tr>
-      <tr><td colspan="3" style="padding:4px;border:1px solid #ddd;word-break:break-word;"><strong>Dirección:</strong> ${r.dirExacta||''}</td></tr>
-    </table>
-    ${fmtPersona(r.imputados||[],'imp')}
-    ${fmtPersona(r.ofendidos||[],'of')}
-    <h4 style="color:#1a3a5c;margin:10px 0 6px;">DESCRIPCIÓN DE HECHOS</h4>
-    <p style="font-size:11px;text-align:justify;padding:8px;border:1px solid #ddd;margin-bottom:8px;word-break:break-word;">${r.hechos||'—'}</p>
-    <h4 style="color:#1a3a5c;margin:10px 0 6px;">DILIGENCIAS POLICIALES</h4>
-    <p style="font-size:11px;text-align:justify;padding:8px;border:1px solid #ddd;margin-bottom:10px;word-break:break-word;">${r.diligencias||'—'}</p>
-    ${r.docs&&r.docs.length?`<div style="margin-top:12px;"><h4 style="color:#1a3a5c;margin:10px 0 6px;">DOCUMENTOS ADJUNTOS</h4><table style="width:100%;font-size:11px;border-collapse:collapse;"><tr style="background:#f5f5f5;"><th style="padding:4px;border:1px solid #ddd;text-align:left;">Tipo</th><th style="padding:4px;border:1px solid #ddd;">Folio</th><th style="padding:4px;border:1px solid #ddd;">Descripción</th></tr>${r.docs.filter(d=>d.tipo).map(d=>`<tr><td style="padding:4px;border:1px solid #ddd;">${d.tipo||''}</td><td style="padding:4px;border:1px solid #ddd;text-align:center;">${d.folio||''}</td><td style="padding:4px;border:1px solid #ddd;">${d.desc||''}</td></tr>`).join('')}</table></div>`:''}
-    <div style="margin-top:40px;">${firmasHtml}</div>
-    ${modStr}
-    <div style="text-align:center;margin-top:18px;font-size:10px;color:#999;border-top:1px solid #ddd;padding-top:6px;">"Limón Ciudad de la Vida" · ${consec}</div>
-  </div>`);
-}
+
 
 // ============================================================
 // ESTADÍSTICAS M2 AMPLIADAS CON FILTROS Y ASISTENTES
@@ -3890,36 +3821,26 @@ async function cargarTodosLosDatos() {
 async function guardarM1() {
   const grupo=Array.from(document.querySelectorAll('#m1-grupo input:checked')).map(cb=>({n:cb.value,c:cb.dataset.c}));
   if(!grupo.length){toast('Seleccione al menos un oficial','warning');return;}
-
-  // Leer acciones policiales
   const { resultado: apData, apPlano } = leerAccionesPoliciales();
-
-  // Validar ventas ambulantes: cada item debe tener sector y hora
   if(apPlano['ap14']>0){
     const list=document.querySelectorAll('#ap14-list .ap-detalle-item');
     for(const d of list){
       const n=d.id.replace('ap14-det-','');
       const sector=document.getElementById('ap14-sector-'+n)?.value||'';
       const hora=document.getElementById('ap14-hora-'+n)?.value||'';
-      if(!sector||!hora){toast('⚠️ Complete sector y hora en cada intervención de ventas ambulantes','warning');return;}
+      if(!sector||!hora){toast('Complete sector y hora en ventas ambulantes','warning');return;}
     }
   }
-
   const decomisos=[];
   document.querySelectorAll('.decomiso-item').forEach(d=>{
     const n=d.id.replace('dec-','');
     decomisos.push({cat:document.getElementById('dc-cat-'+n)?.value||'',tipo:document.getElementById('dc-tipo-'+n)?.value||'',sub:document.getElementById('dc-sub-'+n)?.value||'',cant:document.getElementById('dc-cant-'+n)?.value||'0'});
   });
-
-  // Documentos realizados: td1..td10 como claves directas
   const docsPlano={};
-  TIPOS_DOC.forEach(t=>{
-    docsPlano[t.id]=parseInt(document.getElementById(t.id)?.value)||0;
-  });
-
-  // Payload: ap1..ap33 como claves directas para Google Sheets
+  TIPOS_DOC.forEach(t=>{ docsPlano[t.id]=parseInt(document.getElementById(t.id)?.value)||0; });
+  const esEdicion=!!window._editandoM1;
   const payload={
-    mod:'m1', action:'crear',
+    mod:'m1', action:esEdicion?'editar':'crear',
     fi:document.getElementById('m1-fi').value,
     ff:document.getElementById('m1-ff').value,
     hi:document.getElementById('m1-hi').value,
@@ -3935,23 +3856,35 @@ async function guardarM1() {
     acciones:JSON.stringify(apData),
     decomisos:JSON.stringify(decomisos),
     u:UA.nombre,
-    ...apPlano,  // ap1..ap33 como columnas directas en Sheets
-    ...docsPlano  // td1..td10 como columnas directas en Sheets
+    ...apPlano,
+    ...docsPlano
   };
-
-  try {
-    const res=await gasPost(payload);
-    const r_local={...payload, id:res.id};
-    r_local.cuant={};
-    r_local.docs={};
-    TIPOS_DOC.forEach(t=>{ r_local.docs[t.l]=docsPlano[t.id]||0; });
-    AP_CAMPOS.forEach(([apId,lbl])=>{ r_local.cuant[lbl]=apPlano[apId]||0; });
+  const normalizar=(r,plano)=>{
+    r.cuant={};
+    AP_CAMPOS.forEach(([apId,lbl])=>{ r.cuant[lbl]=plano[apId]||0; });
+    r.docs={};
+    TIPOS_DOC.forEach(t=>{ r.docs[t.l]=docsPlano[t.id]||0; });
     ['grupo','acciones','decomisos'].forEach(k=>{
-      if(typeof r_local[k]==='string'){try{r_local[k]=JSON.parse(r_local[k]);}catch(e){r_local[k]=[];}}
+      if(typeof r[k]==='string'){try{r[k]=JSON.parse(r[k]);}catch(e){r[k]=[];}}
+      if(!Array.isArray(r[k]))r[k]=[];
     });
-    D.m1.unshift(r_local);
-    if(res.consec){const el=document.getElementById('c-m1');if(el)el.textContent=res.consec;}
-    renderTabla('m1'); toast('✅ Reporte guardado: '+res.id);
+    return r;
+  };
+  try {
+    if(esEdicion){
+      await gasPost({...payload,id:window._editandoM1});
+      const i=D.m1.findIndex(x=>String(x.id)===String(window._editandoM1));
+      if(i>=0) D.m1[i]=normalizar({...D.m1[i],...payload,id:window._editandoM1},apPlano);
+      window._editandoM1=null;
+      const btn=document.querySelector('[onclick="guardarM1()"]');
+      if(btn){btn.textContent='💾 Guardar';btn.style.background='';}
+      renderTabla('m1'); toast('✅ Reporte actualizado');
+    } else {
+      const res=await gasPost(payload);
+      D.m1.unshift(normalizar({...payload,id:res.id},apPlano));
+      if(res.consec){const el=document.getElementById('c-m1');if(el)el.textContent=res.consec;}
+      renderTabla('m1'); toast('✅ Reporte guardado: '+res.id);
+    }
     limpiarM1();
   } catch(e){toast('❌ '+e.message,'danger');}
 }
@@ -4127,12 +4060,34 @@ async function guardarM7() {
   const apelantes=[];
   const n=parseInt(document.getElementById('m7-napel').value)||0;
   for(let i=1;i<=n;i++){const v=document.getElementById('apel-'+i)?.value;if(v)apelantes.push(v);}
-  const payload={mod:'m7',action:'crear',mes,anio,mesNom:MESES_NOM[mes]||'',inf:parseInt(document.getElementById('m7-inf').value)||0,monto:parseInt(document.getElementById('m7-monto').value)||0,canc:parseInt(document.getElementById('m7-canc').value)||0,anul:parseInt(document.getElementById('m7-anul').value)||0,napel:apelantes.length,apelantes,reg:document.getElementById('m7-reg').value,u:UA.nombre};
+  const esEdicion=!!window._editandoM7;
+  const payload={
+    mod:'m7', action:esEdicion?'editar':'crear',
+    mes,anio,mesNom:MESES_NOM[mes]||'',
+    inf:parseInt(document.getElementById('m7-inf').value)||0,
+    monto:parseInt(document.getElementById('m7-monto').value)||0,
+    canc:parseInt(document.getElementById('m7-canc').value)||0,
+    anul:parseInt(document.getElementById('m7-anul').value)||0,
+    napel:apelantes.length,apelantes,
+    reg:document.getElementById('m7-reg').value,
+    u:UA.nombre
+  };
   try {
-    const res=await gasPost(payload);
-    D.m7.push({...payload,id:res.id});
-    if(res.consec){const el=document.getElementById('c-m7');if(el)el.textContent=res.consec;}
-    renderTabla('m7'); renderStatsM7(); toast('✅ Informe guardado: '+res.id); limpiarM7();
+    if(esEdicion){
+      await gasPost({...payload,id:window._editandoM7});
+      const i=D.m7.findIndex(x=>String(x.id)===String(window._editandoM7));
+      if(i>=0) D.m7[i]={...D.m7[i],...payload,id:window._editandoM7};
+      window._editandoM7=null;
+      const btn=document.querySelector('[onclick="guardarM7()"]');
+      if(btn){btn.textContent='💾 Guardar';btn.style.background='';}
+      renderTabla('m7'); renderStatsM7(); toast('✅ Informe actualizado');
+    } else {
+      const res=await gasPost(payload);
+      D.m7.push({...payload,id:res.id});
+      if(res.consec){const el=document.getElementById('c-m7');if(el)el.textContent=res.consec;}
+      renderTabla('m7'); renderStatsM7(); toast('✅ Informe guardado: '+res.id);
+    }
+    limpiarM7();
   } catch(e){toast('❌ '+e.message,'danger');}
 }
 
@@ -4229,6 +4184,349 @@ async function guardarCfg() {
 }
 
 function save(){}
+
+
+
+// ── M2: IMPRIMIR CON ID, ELIMINAR ─────────────────────────
+function imprimirM2(id){
+  const old=D.m2[0];
+  if(id){ const r=D.m2.find(x=>String(x.id)===String(id)); if(r){D.m2.unshift(r); imprimirM2(); D.m2.splice(D.m2.indexOf(r),1); if(old&&old!==r)D.m2.unshift(old);} return; }
+  // Si se llama sin id usa D.m2[0]
+  const r=D.m2[0]; if(!r){toast('Sin parte para imprimir','warning');return;}
+  const consec=document.getElementById('c-m2')?.textContent||r.id||'';
+  const fmtP=(ps,tipo)=>{const v=ps.filter(p=>p.nom&&p.nom.trim());if(!v.length)return '';return '<h4 style="color:#1a3a5c;margin:10px 0 6px;">'+tipo+'</h4><table style="width:100%;font-size:10pt;border-collapse:collapse;">'+v.map((p,i)=>'<tr style="background:'+(i%2?'#f5f5f5':'white')+'"><td style="padding:4px 6px;border:1px solid #ddd;width:40%;">'+p.nom+'</td><td style="padding:4px 6px;border:1px solid #ddd;">'+p.ced+'</td><td style="padding:4px 6px;border:1px solid #ddd;">'+p.del+'</td></tr>').join('')+'</table>';};
+  const imps=fmtP(r.imputados||[],'IMPUTADOS');
+  const ofe=fmtP(r.ofendidos||[],'OFENDIDOS');
+  const docsHtml=(r.docs||[]).filter(d=>d.tipo).length?'<h4 style="color:#1a3a5c;margin:10px 0 6px;">DOCUMENTOS ADJUNTOS</h4><table style="width:100%;font-size:10pt;border-collapse:collapse;"><tr style="background:#1a3a5c;color:white;"><th style="padding:4px 6px;">Tipo</th><th style="padding:4px 6px;">Folio</th><th style="padding:4px 6px;">Descripción</th></tr>'+(r.docs||[]).filter(d=>d.tipo).map(d=>'<tr><td style="padding:4px 6px;border:1px solid #ddd;">'+d.tipo+'</td><td style="padding:4px 6px;border:1px solid #ddd;">'+d.folio+'</td><td style="padding:4px 6px;border:1px solid #ddd;">'+d.desc+'</td></tr>').join('')+'</table>':'';
+  const firmasHtml=(r.asistentes||[]).filter(a=>a.n).map(a=>'<div style="min-width:160px;flex:1;text-align:center;"><div style="height:50px;border-bottom:1px solid #333;margin-bottom:5px;"></div><div style="font-size:10pt;font-weight:600;">'+a.n+'</div></div>').join('');
+  print2(`<div style="max-width:100%;font-family:Arial,sans-serif;font-size:11pt;">
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a3a5c;padding-bottom:10px;margin-bottom:14px;">
+      <img src="${I_PML}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
+      <div style="text-align:center;flex:1;"><div style="font-weight:700;font-size:13pt;color:#1a3a5c;">MUNICIPALIDAD DEL CANTÓN CENTRAL DE LIMÓN</div><div>Policía Municipal de Limón</div><div style="font-weight:700;font-size:12pt;margin-top:4px;">PARTE POLICIAL</div><div style="font-size:10pt;color:#555;">${consec}</div></div>
+      <img src="${I_MUNI}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+      <tr><td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>Fecha:</strong> ${r.fecha||''}</td><td style="padding:4px 6px;border:1px solid #ddd;width:25%;"><strong>Hora:</strong> ${r.hora||''}</td><td style="padding:4px 6px;border:1px solid #ddd;" colspan="2"><strong>Oficial:</strong> ${r.oficial||''}</td></tr>
+      <tr><td style="padding:4px 6px;border:1px solid #ddd;"><strong>Dirigido a:</strong></td><td style="padding:4px 6px;border:1px solid #ddd;" colspan="3">${r.dirigido||''}</td></tr>
+      <tr><td style="padding:4px 6px;border:1px solid #ddd;"><strong>Cantón:</strong> ${r.canton||''}</td><td style="padding:4px 6px;border:1px solid #ddd;"><strong>Distrito:</strong> ${r.distrito||''}</td><td style="padding:4px 6px;border:1px solid #ddd;" colspan="2"><strong>Tipo lugar:</strong> ${r.tipoLugar||''}</td></tr>
+      <tr><td colspan="4" style="padding:4px 6px;border:1px solid #ddd;"><strong>Dirección exacta:</strong> ${r.dirExacta||''}</td></tr>
+    </table>
+    <h4 style="color:#1a3a5c;margin:10px 0 6px;border-bottom:1px solid #c9942a;padding-bottom:2px;">HECHOS</h4>
+    <p style="text-align:justify;line-height:1.7;white-space:pre-wrap;">${(r.hechos||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>
+    <h4 style="color:#1a3a5c;margin:10px 0 6px;border-bottom:1px solid #c9942a;padding-bottom:2px;">DILIGENCIAS</h4>
+    <p style="text-align:justify;line-height:1.7;white-space:pre-wrap;">${(r.diligencias||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>
+    ${imps}${ofe}${docsHtml}
+    ${firmasHtml?'<div style="margin-top:30px;display:flex;flex-wrap:wrap;gap:20px;">'+firmasHtml+'</div>':''}
+    <div style="text-align:center;margin-top:18px;font-size:9pt;color:#999;border-top:1px solid #ddd;padding-top:6px;">"Limón Ciudad de la Vida" · ${consec}</div>
+  </div>`);
+}
+
+async function eliminarParteM2(id){
+  if(!confirm('¿Eliminar este parte policial?')) return;
+  try {
+    await gasPost({mod:'m2',action:'eliminar',id});
+    D.m2=D.m2.filter(x=>String(x.id)!==String(id));
+    renderTabla('m2'); toast('Parte eliminado','warning');
+  } catch(e){toast('❌ '+e.message,'danger');}
+}
+
+// ── M4: VER, IMPRIMIR, ELIMINAR ───────────────────────────
+function verM4(id){
+  const r=D.m4.find(x=>String(x.id)===String(id));
+  if(!r){toast('Registro no encontrado','danger');return;}
+  const modal=document.getElementById('modal-confirm');
+  const cont=document.getElementById('modal-confirm-msg');
+  if(cont){
+    cont.innerHTML=`<div style="font-size:13px;"><h4 style="color:#1a3a5c;">${r.id}</h4>
+      <p><strong>Oficial:</strong> ${r.oficial||''}</p>
+      <p><strong>Fecha:</strong> ${r.fecha||''}</p>
+      <p><strong>Programa:</strong> ${r.prog||''}</p>
+      <p><strong>Distrito:</strong> ${r.dist||''}</p>
+      <p><strong>Centro:</strong> ${r.centro||''}</p>
+      <p><strong>Nivel:</strong> ${r.nivel||''}</p>
+      <p><strong>Estudiantes:</strong> ${r.est||0}</p>
+    </div>`;
+    modal.classList.add('open');
+    document.body.classList.add('modal-open');
+  }
+}
+
+function imprimirM4Reg(id){
+  const r=D.m4.find(x=>String(x.id)===String(id));
+  if(!r){toast('Registro no encontrado','danger');return;}
+  print2(`<div style="max-width:100%;font-family:Arial,sans-serif;font-size:11pt;">
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a3a5c;padding-bottom:10px;margin-bottom:14px;">
+      <img src="${I_PML}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
+      <div style="text-align:center;flex:1;"><div style="font-weight:700;font-size:13pt;color:#1a3a5c;">MUNICIPALIDAD DEL CANTÓN CENTRAL DE LIMÓN</div><div>Unidad de Programas Preventivos</div><div style="font-weight:700;font-size:12pt;margin-top:4px;">VISITA PROGRAMA PREVENTIVO</div><div style="font-size:10pt;color:#555;">${r.id}</div></div>
+      <img src="${I_MUNI}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
+    </div>
+    <table style="width:100%;border-collapse:collapse;">
+      <tr><td style="padding:5px 7px;border:1px solid #ddd;width:30%;"><strong>Oficial:</strong></td><td style="padding:5px 7px;border:1px solid #ddd;">${r.oficial||''}</td></tr>
+      <tr><td style="padding:5px 7px;border:1px solid #ddd;"><strong>Fecha:</strong></td><td style="padding:5px 7px;border:1px solid #ddd;">${r.fecha||''}</td></tr>
+      <tr><td style="padding:5px 7px;border:1px solid #ddd;"><strong>Programa:</strong></td><td style="padding:5px 7px;border:1px solid #ddd;">${r.prog||''}</td></tr>
+      <tr><td style="padding:5px 7px;border:1px solid #ddd;"><strong>Distrito:</strong></td><td style="padding:5px 7px;border:1px solid #ddd;">${r.dist||''}</td></tr>
+      <tr><td style="padding:5px 7px;border:1px solid #ddd;"><strong>Centro Educativo:</strong></td><td style="padding:5px 7px;border:1px solid #ddd;">${r.centro||''}</td></tr>
+      <tr><td style="padding:5px 7px;border:1px solid #ddd;"><strong>Nivel:</strong></td><td style="padding:5px 7px;border:1px solid #ddd;">${r.nivel||''}</td></tr>
+      <tr><td style="padding:5px 7px;border:1px solid #ddd;"><strong>Estudiantes atendidos:</strong></td><td style="padding:5px 7px;border:1px solid #ddd;font-weight:700;">${r.est||0}</td></tr>
+      ${r.cierre==='si'?'<tr><td colspan="2" style="padding:5px 7px;border:1px solid #ddd;text-align:center;"><span style="color:#c9942a;font-weight:700;">⭐ CIERRE SATISFACTORIO</span></td></tr>':''}
+    </table>
+    <div style="text-align:center;margin-top:30px;font-size:9pt;color:#999;border-top:1px solid #ddd;padding-top:6px;">"Limón Ciudad de la Vida" · ${r.id}</div>
+  </div>`);
+}
+
+async function eliminarM4(id){
+  if(!confirm('¿Eliminar esta visita?')) return;
+  try {
+    await gasPost({mod:'m4',action:'eliminar',id});
+    D.m4=D.m4.filter(x=>String(x.id)!==String(id));
+    renderTabla('m4'); toast('Visita eliminada','warning');
+  } catch(e){toast('❌ '+e.message,'danger');}
+}
+
+// ── M7: VER, EDITAR, IMPRIMIR CON ID, ELIMINAR ────────────
+function verM7(id){
+  const r=D.m7.find(x=>String(x.id)===String(id));
+  if(!r){toast('Registro no encontrado','danger');return;}
+  const modal=document.getElementById('modal-confirm');
+  const cont=document.getElementById('modal-confirm-msg');
+  if(cont){
+    cont.innerHTML=`<div style="font-size:13px;"><h4 style="color:#1a3a5c;">${r.id} — ${r.mesNom||''} ${r.anio||''}</h4>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr><td style="padding:4px 6px;border:1px solid #ddd;width:50%;"><strong>Infracciones:</strong></td><td style="padding:4px 6px;border:1px solid #ddd;">${r.inf||0}</td></tr>
+        <tr><td style="padding:4px 6px;border:1px solid #ddd;"><strong>Monto recaudado:</strong></td><td style="padding:4px 6px;border:1px solid #ddd;">₡${parseInt(r.monto||0).toLocaleString()}</td></tr>
+        <tr><td style="padding:4px 6px;border:1px solid #ddd;"><strong>Canceladas:</strong></td><td style="padding:4px 6px;border:1px solid #ddd;">${r.canc||0}</td></tr>
+        <tr><td style="padding:4px 6px;border:1px solid #ddd;"><strong>Anuladas:</strong></td><td style="padding:4px 6px;border:1px solid #ddd;">${r.anul||0}</td></tr>
+        <tr><td style="padding:4px 6px;border:1px solid #ddd;"><strong>Apelaciones:</strong></td><td style="padding:4px 6px;border:1px solid #ddd;">${r.napel||0}</td></tr>
+      </table>
+    </div>`;
+    modal.classList.add('open');
+    document.body.classList.add('modal-open');
+  }
+}
+
+function editarM7(id){
+  const r=D.m7.find(x=>String(x.id)===String(id));
+  if(!r){toast('Registro no encontrado','danger');return;}
+  navTo('mod7');
+  const tabsRow=document.querySelector('#wf-tabs-mod7');
+  if(tabsRow){
+    tabsRow.querySelectorAll('.wf-tab').forEach(t=>t.classList.remove('active'));
+    tabsRow.querySelector('.wf-tab')?.classList.add('active');
+  }
+  document.querySelectorAll('[id^="wf-mod7-"]').forEach(c=>c.classList.remove('active'));
+  const contNuevo=document.getElementById('wf-mod7-nuevo');
+  if(contNuevo) contNuevo.classList.add('active');
+  setTimeout(()=>{
+    const setV=(elId,val)=>{const e=document.getElementById(elId);if(e)e.value=val||'';};
+    setV('m7-anio',r.anio); setV('m7-mes',r.mes);
+    setV('m7-inf',r.inf); setV('m7-monto',r.monto);
+    setV('m7-canc',r.canc); setV('m7-anul',r.anul);
+    setV('m7-napel',r.napel); setV('m7-reg',r.reg);
+    window._editandoM7=id;
+    const btn=document.querySelector('[onclick="guardarM7()"]');
+    if(btn){btn.textContent='💾 Actualizar Informe';btn.style.background='var(--dorado)';}
+    toast('✏️ Informe '+id+' cargado. Modifique y guarde.','warning');
+  },150);
+}
+
+function imprimirM7Reg(id){
+  const r=D.m7.find(x=>String(x.id)===String(id));
+  if(!r){toast('Registro no encontrado','danger');return;}
+  print2(`<div style="max-width:100%;font-family:Arial,sans-serif;font-size:11pt;">
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a3a5c;padding-bottom:10px;margin-bottom:14px;">
+      <img src="${I_PML}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
+      <div style="text-align:center;flex:1;"><div style="font-weight:700;font-size:13pt;color:#1a3a5c;">MUNICIPALIDAD DEL CANTÓN CENTRAL DE LIMÓN</div><div>Departamento de Estacionómetros</div><div style="font-weight:700;font-size:12pt;margin-top:4px;">INFORME MENSUAL DE ESTACIONÓMETROS</div><div style="font-size:10pt;color:#555;">${r.id}</div></div>
+      <img src="${I_MUNI}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
+    </div>
+    <p style="font-weight:700;font-size:12pt;color:#1a3a5c;margin:10px 0 8px;">Período: ${r.mesNom||''} ${r.anio||''}</p>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px;">
+      <tr style="background:#1a3a5c;color:white;"><th style="padding:6px 10px;">Indicador</th><th style="padding:6px 10px;text-align:right;">Valor</th></tr>
+      <tr><td style="padding:5px 10px;border:1px solid #ddd;">Infracciones emitidas</td><td style="padding:5px 10px;border:1px solid #ddd;text-align:right;font-weight:700;">${r.inf||0}</td></tr>
+      <tr style="background:#f5f5f5;"><td style="padding:5px 10px;border:1px solid #ddd;">Monto recaudado</td><td style="padding:5px 10px;border:1px solid #ddd;text-align:right;font-weight:700;">₡${parseInt(r.monto||0).toLocaleString()}</td></tr>
+      <tr><td style="padding:5px 10px;border:1px solid #ddd;">Boletas canceladas</td><td style="padding:5px 10px;border:1px solid #ddd;text-align:right;">${r.canc||0}</td></tr>
+      <tr style="background:#f5f5f5;"><td style="padding:5px 10px;border:1px solid #ddd;">Boletas anuladas</td><td style="padding:5px 10px;border:1px solid #ddd;text-align:right;">${r.anul||0}</td></tr>
+      <tr><td style="padding:5px 10px;border:1px solid #ddd;">Apelaciones presentadas</td><td style="padding:5px 10px;border:1px solid #ddd;text-align:right;">${r.napel||0}</td></tr>
+    </table>
+    ${r.reg?'<h4 style="color:#1a3a5c;margin:10px 0 6px;">OBSERVACIONES</h4><p style="text-align:justify;line-height:1.7;">'+r.reg+'</p>':''}
+    <div style="text-align:center;margin-top:30px;font-size:9pt;color:#999;border-top:1px solid #ddd;padding-top:6px;">"Limón Ciudad de la Vida" · ${r.id}</div>
+  </div>`);
+}
+
+async function eliminarM7(id){
+  if(!confirm('¿Eliminar este informe?')) return;
+  try {
+    await gasPost({mod:'m7',action:'eliminar',id});
+    D.m7=D.m7.filter(x=>String(x.id)!==String(id));
+    renderTabla('m7'); renderStatsM7(); toast('Informe eliminado','warning');
+  } catch(e){toast('❌ '+e.message,'danger');}
+}
+
+
+
+// ════════════════════════════════════════════════════════
+// MÓDULO 6 — RENDICIÓN DE CUENTAS
+// ════════════════════════════════════════════════════════
+
+function buildInformeHTML(){
+  const oficio=document.getElementById('m6-oficio')?.value||'';
+  const fecha=document.getElementById('m6-fecha')?.value||'';
+  const desde=document.getElementById('m6-desde')?.value||'';
+  const hasta=document.getElementById('m6-hasta')?.value||'';
+  const dirigido=document.getElementById('m6-dirigido')?.value||'';
+  const just=document.getElementById('m6-just')?.value||'';
+  const inc={
+    m1:document.getElementById('m6-i1')?.checked,
+    m2:document.getElementById('m6-i2')?.checked,
+    m3:document.getElementById('m6-i3')?.checked,
+    m4:document.getElementById('m6-i4')?.checked,
+    m7:document.getElementById('m6-i7')?.checked,
+    stats:document.getElementById('m6-i5')?.checked,
+  };
+
+  // ── Calcular totales M1 ──────────────────────────────
+  const totM1={};
+  AP_CAMPOS.forEach(([apId,lbl])=>{ totM1[lbl]=0; });
+  D.m1.forEach(r=>{ AP_CAMPOS.forEach(([apId,lbl])=>{ totM1[lbl]+=(parseInt(r.cuant?.[lbl])||parseInt(r[apId])||0); }); });
+  const totalM1=Object.values(totM1).reduce((a,b)=>a+b,0)||1;
+
+  // ── Calcular totales M2 ──────────────────────────────
+  const totalM2=D.m2.length;
+
+  // ── Calcular totales M3 ──────────────────────────────
+  const totalBit=D.m3a.length;
+  const totalInc=D.m3a.reduce((s,r)=>s+(r.incidentes?.length||0),0);
+
+  // ── Calcular totales M4 ──────────────────────────────
+  const totalM4=D.m4.length;
+  const totalEst=D.m4.reduce((s,r)=>s+(parseInt(r.est)||0),0);
+  const progM4={};
+  D.m4.forEach(r=>{ const k=r.prog||'Sin programa'; progM4[k]=(progM4[k]||0)+1; });
+
+  // ── Calcular totales M7 ──────────────────────────────
+  const totalInfM7=D.m7.reduce((s,r)=>s+(parseInt(r.inf)||0),0);
+  const totalMtoM7=D.m7.reduce((s,r)=>s+(parseInt(r.monto)||0),0);
+
+  // ── Sección M1 ───────────────────────────────────────
+  const secM1 = !inc.m1 ? '' : `
+    <div style="margin-bottom:24px;">
+      <h3 style="color:#1a3a5c;border-bottom:2px solid #c9942a;padding-bottom:4px;margin-bottom:10px;">I. REPORTE DIARIO DE LABORES — POLICÍA MUNICIPAL</h3>
+      <p style="text-align:justify;line-height:1.7;margin-bottom:10px;">
+        Durante el período comprendido entre el <strong>${desde}</strong> y el <strong>${hasta}</strong>, la Policía Municipal de Limón registró un total de <strong>${D.m1.length} reportes diarios de labores</strong>. En materia operativa, las principales acciones realizadas se detallan a continuación:
+      </p>
+      <table style="width:100%;border-collapse:collapse;font-size:10pt;margin-bottom:10px;">
+        <thead><tr style="background:#1a3a5c;color:white;"><th style="padding:5px 8px;text-align:left;">Acción Policial</th><th style="padding:5px 8px;text-align:center;">Total</th><th style="padding:5px 8px;text-align:center;">%</th></tr></thead>
+        <tbody>${AP_CAMPOS.map(([apId,lbl])=>{const v=totM1[lbl]||0;if(!v)return '';const pct=((v/totalM1)*100).toFixed(1);return '<tr><td style="padding:4px 8px;border:1px solid #ddd;">'+lbl+'</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;font-weight:700;">'+v+'</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;">'+pct+'%</td></tr>';}).join('')}</tbody>
+      </table>
+      <p style="text-align:justify;line-height:1.7;">
+        ${totM1['PERSONAS DETENIDAS']?'Se realizaron <strong>'+totM1['PERSONAS DETENIDAS']+' detenciones</strong>, ':''}
+        ${totM1['CAPTURAS PENALES']?'<strong>'+totM1['CAPTURAS PENALES']+' capturas penales</strong>, ':''}
+        ${totM1['PERSONAS ABORDADAS']?'y se abordaron <strong>'+totM1['PERSONAS ABORDADAS']+' personas</strong> durante patrullajes y controles.':''}
+        Estos datos reflejan la presencia activa y constante del cuerpo policial en el cantón.
+      </p>
+    </div>`;
+
+  // ── Sección M2 ───────────────────────────────────────
+  const secM2 = !inc.m2 ? '' : `
+    <div style="margin-bottom:24px;">
+      <h3 style="color:#1a3a5c;border-bottom:2px solid #c9942a;padding-bottom:4px;margin-bottom:10px;">II. PARTES POLICIALES</h3>
+      <p style="text-align:justify;line-height:1.7;">
+        En el período evaluado se tramitaron <strong>${totalM2} partes policiales</strong>, documentando las actuaciones formales del cuerpo policial ante hechos delictivos, contravenciones y otras situaciones que requirieron intervención oficial. La elaboración de partes policiales constituye un instrumento fundamental para el registro, seguimiento y referencia ante las autoridades judiciales y administrativas competentes.
+      </p>
+    </div>`;
+
+  // ── Sección M3 ───────────────────────────────────────
+  const secM3 = !inc.m3 ? '' : `
+    <div style="margin-bottom:24px;">
+      <h3 style="color:#1a3a5c;border-bottom:2px solid #c9942a;padding-bottom:4px;margin-bottom:10px;">III. CENTRO DE VIDEO PROTECCIÓN (CVP)</h3>
+      <p style="text-align:justify;line-height:1.7;">
+        El Centro de Video Protección registró <strong>${totalBit} bitácoras de operaciones</strong> durante el período, con un total de <strong>${totalInc} incidentes documentados</strong>. El monitoreo permanente a través del sistema de cámaras de vigilancia permitió dar respuesta oportuna a situaciones de riesgo, apoyar operativos policiales y generar evidencia para procesos judiciales. La cobertura del CVP representa un pilar estratégico en la gestión de seguridad ciudadana del cantón.
+      </p>
+    </div>`;
+
+  // ── Sección M4 ───────────────────────────────────────
+  const progRows=Object.entries(progM4).map(([k,v])=>'<tr><td style="padding:4px 8px;border:1px solid #ddd;">'+k+'</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;font-weight:700;">'+v+'</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;">'+((v/totalM4)*100).toFixed(1)+'%</td></tr>').join('');
+  const secM4 = !inc.m4 ? '' : `
+    <div style="margin-bottom:24px;">
+      <h3 style="color:#1a3a5c;border-bottom:2px solid #c9942a;padding-bottom:4px;margin-bottom:10px;">IV. PROGRAMAS PREVENTIVOS</h3>
+      <p style="text-align:justify;line-height:1.7;margin-bottom:10px;">
+        La Unidad de Programas Preventivos realizó <strong>${totalM4} visitas</strong> a centros educativos del cantón, beneficiando a un total de <strong>${totalEst} estudiantes</strong>. Estas actividades, enmarcadas en programas como GREAT y otros de prevención del delito, contribuyen a fortalecer la cultura de legalidad y convivencia pacífica desde las etapas formativas.
+      </p>
+      ${progRows?'<table style="width:100%;border-collapse:collapse;font-size:10pt;"><thead><tr style="background:#1a3a5c;color:white;"><th style="padding:5px 8px;text-align:left;">Programa</th><th style="padding:5px 8px;text-align:center;">Visitas</th><th style="padding:5px 8px;text-align:center;">%</th></tr></thead><tbody>'+progRows+'</tbody></table>':''}
+    </div>`;
+
+  // ── Sección M7 ───────────────────────────────────────
+  const secM7 = !inc.m7 ? '' : `
+    <div style="margin-bottom:24px;">
+      <h3 style="color:#1a3a5c;border-bottom:2px solid #c9942a;padding-bottom:4px;margin-bottom:10px;">V. DEPARTAMENTO DE ESTACIONÓMETROS</h3>
+      <p style="text-align:justify;line-height:1.7;">
+        El Departamento de Estacionómetros emitió <strong>${totalInfM7.toLocaleString()} infracciones</strong> durante el período evaluado, generando una recaudación total de <strong>₡${totalMtoM7.toLocaleString()}</strong>. La gestión del estacionamiento regulado contribuye al ordenamiento del espacio público y a la generación de ingresos municipales, con estricto apego a la normativa de tránsito vigente.
+      </p>
+    </div>`;
+
+  // ── Conclusión ───────────────────────────────────────
+  const secConc = `
+    <div style="margin-bottom:24px;">
+      <h3 style="color:#1a3a5c;border-bottom:2px solid #c9942a;padding-bottom:4px;margin-bottom:10px;">CONCLUSIÓN</h3>
+      <p style="text-align:justify;line-height:1.7;">
+        Los datos presentados en este informe demuestran el compromiso institucional de la Gestión de Seguridad Ciudadana y Vial de la Municipalidad del Cantón Central de Limón con la prestación de servicios de seguridad de calidad. Las cifras reflejan el trabajo coordinado de los diferentes departamentos y unidades que conforman la dependencia, orientado al bienestar colectivo y al fortalecimiento del Estado de Derecho en el cantón.
+      </p>
+      <p style="text-align:justify;line-height:1.7;">
+        Se hace del conocimiento lo anterior para los efectos pertinentes.
+      </p>
+      <p style="text-align:justify;line-height:1.7;">Atentamente,</p>
+      <div style="margin-top:40px;display:flex;gap:60px;">
+        <div style="text-align:center;flex:1;"><div style="height:50px;border-bottom:1px solid #333;margin-bottom:5px;"></div><div style="font-size:10pt;font-weight:600;">Jefe(a) de la Gestión de Seguridad Ciudadana y Vial</div><div style="font-size:9pt;color:#666;">Municipalidad del Cantón Central de Limón</div></div>
+      </div>
+    </div>`;
+
+  return `<div style="max-width:100%;font-family:Arial,sans-serif;font-size:11pt;color:#111;">
+    <!-- ENCABEZADO -->
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1a3a5c;padding-bottom:12px;margin-bottom:20px;">
+      <img src="${I_PML}" style="height:70px;object-fit:contain;mix-blend-mode:multiply;">
+      <div style="text-align:center;flex:1;padding:0 12px;">
+        <div style="font-weight:700;font-size:14pt;color:#1a3a5c;">MUNICIPALIDAD DEL CANTÓN CENTRAL DE LIMÓN</div>
+        <div style="font-size:11pt;">Gestión de Seguridad Ciudadana y Vial</div>
+        <div style="font-weight:700;font-size:13pt;margin-top:6px;color:#1a3a5c;">INFORME DE RENDICIÓN DE CUENTAS</div>
+        <div style="font-size:10pt;color:#555;">${oficio}</div>
+      </div>
+      <img src="${I_MUNI}" style="height:70px;object-fit:contain;mix-blend-mode:multiply;">
+    </div>
+    <!-- DATOS DEL INFORME -->
+    <table style="width:100%;border-collapse:collapse;margin-bottom:18px;font-size:10pt;">
+      <tr>
+        <td style="padding:5px 8px;border:1px solid #ddd;width:25%;"><strong>Fecha:</strong> ${fecha}</td>
+        <td style="padding:5px 8px;border:1px solid #ddd;width:25%;"><strong>Período inicio:</strong> ${desde}</td>
+        <td style="padding:5px 8px;border:1px solid #ddd;" colspan="2"><strong>Período fin:</strong> ${hasta}</td>
+      </tr>
+      <tr>
+        <td colspan="4" style="padding:5px 8px;border:1px solid #ddd;"><strong>Dirigido a:</strong> ${dirigido}</td>
+      </tr>
+    </table>
+    <!-- JUSTIFICACIÓN -->
+    ${just?'<p style="text-align:justify;line-height:1.7;margin-bottom:18px;">'+just+'</p>':''}
+    <!-- SECCIONES -->
+    ${secM1}${secM2}${secM3}${secM4}${secM7}${secConc}
+    <div style="text-align:center;margin-top:20px;font-size:9pt;color:#999;border-top:1px solid #ddd;padding-top:6px;">"Limón Ciudad de la Vida" · ${oficio}</div>
+  </div>`;
+}
+
+function previsualizarInforme(){
+  const html=buildInformeHTML();
+  const prev=document.getElementById('m6-preview');
+  if(prev){
+    prev.innerHTML='<div style="padding:20px;background:white;border:1px solid #ddd;border-radius:8px;margin-top:16px;">'+html+'</div>';
+    prev.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+}
+
+function imprimirInforme(){
+  const html=buildInformeHTML();
+  print2(html);
+}
+
+function exportarWord(){
+  toast('Para exportar a Word: use la impresión y seleccione "Guardar como PDF" o copie la vista previa a Word.','warning');
+}
 
 document.getElementById('lp')?.addEventListener('keydown',e=>{if(e.key==='Enter')login();});
 
