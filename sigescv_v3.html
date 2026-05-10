@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="version" content="3.5-202605090641">
+<meta name="version" content="3.6-202605091758">
 <title>SIGESCV v2.0 — Policía Municipal de Limón</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -2660,8 +2660,10 @@ function getIncidentes(){const arr=[];document.querySelectorAll('#m3a-incidentes
 
 function imprimirBitacora(){const consec=document.getElementById('c-m3a').textContent;const turnoMap={manana:'06:00 a 14:00',tarde:'14:00 a 22:00',noche:'22:00 a 06:00'};const incs=getIncidentes();const incsHtml=incs.map((inc,i)=>`<div style="margin-bottom:10px;padding:8px;border:1px solid #ddd;border-radius:6px;"><strong style="color:#1a3a5c;">Incidente #${i+1} — ${inc.hora}</strong><table style="width:100%;font-size:11px;margin-top:6px;"><tr><td style="width:20%;"><strong>Cámara:</strong></td><td>${inc.cam}</td><td style="width:20%;"><strong>Categoría:</strong></td><td>${inc.cat}</td></tr><tr><td><strong>Motivo:</strong></td><td>${inc.mot}</td><td><strong>Modo:</strong></td><td>${inc.modo}</td></tr><tr><td><strong>Submodo:</strong></td><td colspan="3">${inc.sub}</td></tr><tr><td><strong>Detalle:</strong></td><td colspan="3" style="text-align:justify;">${inc.det}</td></tr><tr><td><strong>Coord.:</strong></td><td colspan="3">${inc.coord.join(', ')||'—'}</td></tr><tr><td><strong>Resultado:</strong></td><td colspan="3" style="text-align:justify;">${inc.res}</td></tr></table></div>`).join('');print2(`<div style="max-width:800px;margin:0 auto;font-size:12px;"><div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a3a5c;padding-bottom:10px;margin-bottom:12px;"><img src="${I_MUNI}" style="height:60px;"><div style="text-align:center;"><strong>MUNICIPALIDAD DEL CANTÓN CENTRAL DE LIMÓN</strong><br>Centro de Video Protección — Seguridad Electrónica<br><strong>BITÁCORA DIGITAL DE TURNO</strong><br><strong>${consec}</strong></div><img src="${I_MUNI}" style="height:60px;"></div><table style="width:100%;border-collapse:collapse;margin-bottom:12px;"><tr><td style="padding:4px;border:1px solid #ddd;"><strong>F. Inicio:</strong> ${document.getElementById('m3a-fi').value}</td><td style="padding:4px;border:1px solid #ddd;"><strong>F. Fin:</strong> ${document.getElementById('m3a-ff').value}</td><td style="padding:4px;border:1px solid #ddd;"><strong>Turno:</strong> ${turnoMap[document.getElementById('m3a-turno').value]||''}</td><td style="padding:4px;border:1px solid #ddd;"><strong>Operador:</strong> ${document.getElementById('m3a-op').value}</td></tr></table><h4 style="color:#1a3a5c;margin-bottom:8px;">REGISTRO DE INCIDENTES</h4>${incsHtml||'<p style="color:#666;">Sin incidentes registrados.</p>'}<div style="margin-top:24px;text-align:center;width:50%;"><div style="height:55px;border-bottom:1px solid #333;margin-bottom:6px;"></div><div style="font-size:12px;font-weight:600;">${document.getElementById('m3a-op').value}</div><div style="font-size:10px;color:#666;">Operador de Monitoreo — Firma</div></div><div style="text-align:center;margin-top:16px;font-size:10px;color:#999;">"Limón Ciudad de la Vida" · ${consec}</div></div>`);}
 function verBitacora(id){
-  const r=D.m3a.find(x=>x.id===id);
+  const r=D.m3a.find(x=>String(x.id)===String(id));
   if(!r){toast('Bitácora no encontrada','danger');return;}
+  if(typeof r.incidentes==='string'){try{r.incidentes=JSON.parse(r.incidentes||'[]');}catch(e){r.incidentes=[];}}
+  if(!Array.isArray(r.incidentes))r.incidentes=[];
   const tM={manana:'Mañana 06-14h',tarde:'Tarde 14-22h',noche:'Noche 22-06h'};
   const incsHtml=(r.incidentes||[]).map((inc,i)=>`
     <tr style="background:${i%2?'#f9f9f9':'white'}">
@@ -2690,34 +2692,56 @@ function verBitacora(id){
 }
 
 function editarBitacora(id){
-  const r=D.m3a.find(x=>x.id===id);
+  const r=D.m3a.find(x=>String(x.id)===String(id));
   if(!r){toast('Bitácora no encontrada','danger');return;}
-  // Cargar datos en el formulario
+  // Asegurar que incidentes es array
+  const incs=Array.isArray(r.incidentes)?r.incidentes:
+    (typeof r.incidentes==='string'?JSON.parse(r.incidentes||'[]'):[]);
+
   const setV=(elId,val)=>{const e=document.getElementById(elId);if(e)e.value=val||'';};
   setV('m3a-fi',r.fi); setV('m3a-ff',r.ff);
   setV('m3a-turno',r.turno); setV('m3a-op',r.op);
   setV('m3a-acomp',r.acompanado||'no');
-  // Cargar incidentes existentes
+
   const incList=document.getElementById('m3a-incidentes');
   if(incList) incList.innerHTML='';
   nInc=0;
-  (r.incidentes||[]).forEach(inc=>{
+
+  incs.forEach(inc=>{
     addIncidente();
     const n=nInc;
     const setI=(field,val)=>{const e=document.getElementById(`in${n}-${field}`);if(e)e.value=val||'';};
-    setI('hora',inc.hora); setI('cam',inc.camara||inc.cam);
-    setI('cat',inc.cat); setI('mot',inc.mot);
-    setI('modo',inc.modo); setI('sub',inc.sub||inc.submodo);
-    setI('det',inc.det||inc.detalle); setI('res',inc.res||inc.resultado);
+    setI('hora',inc.hora);
+    setI('cam',inc.camara||inc.cam||'');
+    setI('cat',inc.cat||'');
+    setI('mot',inc.mot||inc.motivo||'');
+    setI('modo',inc.modo||'');
+    setI('sub',inc.sub||inc.submodo||'');
+    setI('det',inc.det||inc.detalle||'');
+    setI('res',inc.res||inc.resultado||'');
   });
+
   window._editandoBitacora=id;
-  navTo('m3');
-  toast('Bitácora cargada para edición. Modifique y guarde.','warning');
+  navTo('mod3');
+  // Activar tab 3A
+  const tabs=document.querySelectorAll('#wf-tabs-mod3 .wf-tab');
+  tabs.forEach(t=>t.classList.remove('active'));
+  if(tabs[0])tabs[0].classList.add('active');
+  document.querySelectorAll('[id^="wf-mod3-"]').forEach(c=>c.classList.remove('active'));
+  const cont=document.getElementById('wf-mod3-bitacora');
+  if(cont)cont.classList.add('active');
+
+  const btn=document.querySelector('[onclick="guardarBitacora()"]');
+  if(btn){btn.textContent='💾 Actualizar Bitácora';btn.style.background='var(--dorado)';}
+  toast('✏️ Bitácora '+id+' cargada. Modifique y guarde.','warning');
 }
 
 function imprimirBitacoraId(id){
-  const r=D.m3a.find(x=>x.id===id);
+  const r=D.m3a.find(x=>String(x.id)===String(id));
   if(!r){toast('Bitácora no encontrada','danger');return;}
+  // Normalizar incidentes
+  if(typeof r.incidentes==='string'){try{r.incidentes=JSON.parse(r.incidentes||'[]');}catch(e){r.incidentes=[];}}
+  if(!Array.isArray(r.incidentes))r.incidentes=[];
   const tM={manana:'Mañana (06:00-14:00)',tarde:'Tarde (14:00-22:00)',noche:'Noche (22:00-06:00)'};
   const incsHtml=(r.incidentes||[]).map((inc,i)=>`
     <tr style="background:${i%2?'#f5f5f5':'white'}">
@@ -2790,9 +2814,120 @@ function limpiarBitacora(){
 
 // M3B SECUESTROS
 const INST_SECUESTROS=[{id:'oij',lbl:'OIJ — Organismo de Investigación Judicial'},{id:'transito',lbl:'Juzgado de Tránsito'},{id:'fiscal',lbl:'Fiscalía'},{id:'contra',lbl:'Juzgado Contravencional'},{id:'pcd',lbl:'Policía Control de Drogas (PCD)'},{id:'pml',lbl:'Policía Municipal (PML)'}];
-function initSecuestros(){INST_SECUESTROS.forEach(inst=>{const cont=document.getElementById('m3b-'+inst.id);if(!cont||cont.innerHTML.trim())return;const esPML=inst.id==='pml';cont.innerHTML=`<div class="form-grid form-grid-3" style="margin-bottom:14px;"><div class="form-field"><label>Operador Responsable</label><select id="sb-op-${inst.id}"><option value="">Seleccionar...</option>${OPERADORES.map(o=>`<option value="${o.n}">${o.ind} — ${o.n}</option>`).join('')}</select></div>${esPML?`<div class="form-field field-span-2"><label>Oficial PML</label><select id="sb-pml-of"><option value="">Seleccionar...</option>${POLICIAS.map(p=>`<option>${p.n}</option>`).join('')}</select></div>`:`<div class="form-field field-span-2"><label>Agente Responsable</label><input type="text" id="sb-ag-${inst.id}" placeholder="Nombre del agente"></div>`}<div class="form-field"><label>Cédula</label><input type="text" id="sb-ced-${inst.id}"></div><div class="form-field field-span-2"><label>N° Causa / Expediente</label><input type="text" id="sb-causa-${inst.id}" placeholder="Ej: 26-000165-0063-PE"></div><div class="form-field field-span-3"><label>Motivo del Caso</label><textarea id="sb-motivo-${inst.id}" placeholder="Descripción del motivo..." rows="3" style="text-align:justify;resize:vertical;"></div><div class="form-field"><label>Fecha Inicio Video</label><input type="date" id="sb-fi-${inst.id}" value="${hoy()}"></div><div class="form-field"><label>Fecha Fin Video</label><input type="date" id="sb-ff-${inst.id}" value="${hoy()}"></div><div class="form-field"><label>Estado</label><select id="sb-est-${inst.id}"><option>Entregado</option><option>Pendiente</option></select></div></div><div class="btn-group" style="margin-bottom:16px;"><button class="btn btn-primary" onclick="guardarSecuestro('${inst.id}')">💾 Registrar</button></div><div class="tabla-wrapper"><table><thead><tr><th>Operador</th><th>Agente</th><th>N° Causa</th><th>F. Inicio</th><th>F. Fin</th><th>Estado</th><th></th></tr></thead><tbody id="sb-tbody-${inst.id}"></tbody></table></div>`;renderSecuestros(inst.id);});}
+function initSecuestros(){
+  INST_SECUESTROS.forEach(inst=>{
+    const cont=document.getElementById('m3b-'+inst.id);
+    if(!cont||cont.innerHTML.trim())return;
+    const esPML=inst.id==='pml';
+    cont.innerHTML=`
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><div class="card-titulo">📹 Nuevo Secuestro — ${inst.lbl}</div></div>
+        <div class="card-body">
+          <div class="form-grid form-grid-3" style="margin-bottom:14px;">
+            <div class="form-field">
+              <label>Operador Responsable</label>
+              <select id="sb-op-${inst.id}">
+                <option value="">Seleccionar...</option>
+                ${OPERADORES.map(o=>`<option value="${o.n}">${o.ind} — ${o.n}</option>`).join('')}
+              </select>
+            </div>
+            ${esPML?`
+            <div class="form-field field-span-2">
+              <label>Oficial PML</label>
+              <select id="sb-pml-of">
+                <option value="">Seleccionar...</option>
+                ${POLICIAS.map(p=>`<option>${p.n}</option>`).join('')}
+              </select>
+            </div>`:
+            `<div class="form-field field-span-2">
+              <label>Agente Responsable</label>
+              <input type="text" id="sb-ag-${inst.id}" placeholder="Nombre del agente">
+            </div>`}
+            <div class="form-field">
+              <label>Cédula</label>
+              <input type="text" id="sb-ced-${inst.id}">
+            </div>
+            <div class="form-field field-span-2">
+              <label>N° Causa / Expediente</label>
+              <input type="text" id="sb-causa-${inst.id}" placeholder="Ej: 26-000165-0063-PE">
+            </div>
+            <div class="form-field field-span-3">
+              <label>Motivo del Caso</label>
+              <textarea id="sb-motivo-${inst.id}" placeholder="Descripción del motivo del secuestro de imagen..." rows="3" style="text-align:justify;resize:vertical;"></textarea>
+            </div>
+            <div class="form-field">
+              <label>Fecha Inicio Video</label>
+              <input type="date" id="sb-fi-${inst.id}" value="${hoy()}">
+            </div>
+            <div class="form-field">
+              <label>Fecha Fin Video</label>
+              <input type="date" id="sb-ff-${inst.id}" value="${hoy()}">
+            </div>
+            <div class="form-field">
+              <label>Estado</label>
+              <select id="sb-est-${inst.id}">
+                <option value="Entregado">Entregado</option>
+                <option value="Pendiente">Pendiente</option>
+              </select>
+            </div>
+          </div>
+          <div class="btn-group" style="margin-bottom:8px;">
+            <button class="btn btn-primary" onclick="guardarSecuestro('${inst.id}')">💾 Registrar</button>
+            <button class="btn btn-secondary" onclick="limpiarSecuestro('${inst.id}')">🧹 Limpiar</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-titulo">📋 Registros — ${inst.lbl}</div>
+        </div>
+        <div class="tabla-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>N°</th>
+                <th>Operador</th>
+                <th>Agente</th>
+                <th>N° Causa</th>
+                <th>F. Inicio</th>
+                <th>F. Fin</th>
+                <th>Estado</th>
+                <th style="text-align:center;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="sb-tbody-${inst.id}"></tbody>
+          </table>
+        </div>
+      </div>`;
+    renderSecuestros(inst.id);
+  });
+}
 
-function renderSecuestros(instId){const tbody=document.getElementById('sb-tbody-'+instId);if(!tbody)return;const regs=D.m3b.filter(r=>r.inst===instId);tbody.innerHTML=regs.map(r=>`<tr><td>${r.op?.split('—')[0]?.trim()||r.op}</td><td>${r.agente}</td><td style="font-size:11px;">${r.causa}</td><td>${r.fi}</td><td>${r.ff}</td><td><span class="badge ${r.estado==='Entregado'?'badge-verde':'badge-dorado'}">${r.estado}</span></td><td style="white-space:nowrap;"><button class="btn btn-secondary btn-sm" onclick="verSecuestro('${r.id}')" title="Ver">👁️</button> <button class="btn btn-warning btn-sm" onclick="editarSecuestro('${r.id}','${instId}')" title="Editar">✏️</button> <button class="btn btn-primary btn-sm" onclick="imprimirSecuestro('${r.id}')" title="Imprimir">🖨️</button> <button class="btn btn-danger btn-sm" onclick="eliminarSecuestro(${r.id},'${instId}')" title="Eliminar">🗑️</button></td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:#999;padding:12px;">Sin registros</td></tr>';}
+function renderSecuestros(instId){
+  const tbody=document.getElementById('sb-tbody-'+instId);
+  if(!tbody)return;
+  const regs=D.m3b.filter(r=>r.inst===instId);
+  if(!regs.length){
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:#999;padding:12px;">Sin registros para esta institución.</td></tr>';
+    return;
+  }
+  tbody.innerHTML=regs.slice().reverse().map(r=>`
+    <tr>
+      <td><span class="badge badge-azul" style="font-size:11px;">${r.id||'—'}</span></td>
+      <td style="font-size:12px;">${r.op?.split('—')[1]?.trim()||r.op||'—'}</td>
+      <td style="font-size:12px;">${r.agente||'—'}</td>
+      <td style="font-size:11px;">${r.causa||'—'}</td>
+      <td style="font-size:11px;">${r.fi||'—'}</td>
+      <td style="font-size:11px;">${r.ff||'—'}</td>
+      <td><span class="badge ${r.estado==='Entregado'?'badge-verde':'badge-dorado'}">${r.estado||'—'}</span></td>
+      <td style="white-space:nowrap;text-align:center;">
+        <button class="btn btn-secondary btn-sm" onclick="verSecuestro('${r.id}')" title="Ver">👁️</button>
+        <button class="btn btn-warning btn-sm" onclick="editarSecuestro('${r.id}','${instId}')" title="Editar">✏️</button>
+        <button class="btn btn-primary btn-sm" onclick="imprimirSecuestro('${r.id}')" title="Imprimir">🖨️</button>
+        <button class="btn btn-danger btn-sm" onclick="eliminarSecuestro('${r.id}','${instId}')" title="Eliminar">🗑️</button>
+      </td>
+    </tr>`).join('');
+}
 
 
 // M3C LLAMADOS
@@ -3510,11 +3645,23 @@ function renderStatsM2(){
   const hasta=document.getElementById('m2-stats-hasta')?.value||'';
   const filtOficial=document.getElementById('m2-stats-oficial')?.value||'';
   const filtDir=document.getElementById('m2-stats-dir')?.value||'';
-  // Poblar select de oficiales si está vacío
+  // Poblar select de oficiales con valores reales
   const selOf=document.getElementById('m2-stats-oficial');
-  if(selOf&&selOf.options.length<=1){
-    const oficiales=[...new Set(D.m2.map(r=>r.oficial).filter(Boolean))];
+  if(selOf){
+    const valOf=selOf.value;
+    selOf.innerHTML='<option value="">Todos</option>';
+    const oficiales=[...new Set(D.m2.map(r=>r.oficial).filter(Boolean))].sort();
     oficiales.forEach(o=>{const opt=document.createElement('option');opt.value=o;opt.textContent=o;selOf.appendChild(opt);});
+    if(valOf)selOf.value=valOf;
+  }
+  // Poblar select de dirigido con valores reales
+  const selDir=document.getElementById('m2-stats-dir');
+  if(selDir){
+    const valDir=selDir.value;
+    selDir.innerHTML='<option value="">Todos</option>';
+    const dirs=[...new Set(D.m2.map(r=>r.dirigido).filter(Boolean))].sort();
+    dirs.forEach(d=>{const opt=document.createElement('option');opt.value=d;opt.textContent=d;selDir.appendChild(opt);});
+    if(valDir)selDir.value=valDir;
   }
   // Filtrar registros
   let datos=D.m2.filter(r=>{
@@ -4052,7 +4199,13 @@ async function cargarTodosLosDatos() {
       });
       return r;
     });
-    D.m2=m2; D.m3a=m3a; D.m3b=m3b;
+    D.m2=m2; D.m3a=m3a.map(r=>{
+      if(typeof r.incidentes==='string'){try{r.incidentes=JSON.parse(r.incidentes||'[]');}catch(e){r.incidentes=[];}}
+      if(!Array.isArray(r.incidentes))r.incidentes=[];
+      if(typeof r.acompanantes==='string'){try{r.acompanantes=JSON.parse(r.acompanantes||'[]');}catch(e){r.acompanantes=[];}}
+      return r;
+    });
+    D.m3b=m3b;
     D.m3c=m3c; D.m4=m4; D.m7=m7; D.aud=aud;
     USUARIOS=usrs;
     C={ m1:consecs.m1||1, m2:consecs.m2||1, m3a:consecs.m3a||1, m4:consecs.m4||1, m7:consecs.m7||1 };
@@ -4105,9 +4258,18 @@ async function guardarM1() {
     ...apPlano,
     ...docsPlano
   };
-  const normalizar=(r,plano)=>{
+  const normalizar=(r,plano,isEdit)=>{
+    const orig=isEdit?D.m1.find(x=>String(x.id)===String(window._editandoM1)):null;
     r.cuant={};
-    AP_CAMPOS.forEach(([apId,lbl])=>{ r.cuant[lbl]=plano[apId]||0; });
+    AP_CAMPOS.forEach(([apId,lbl])=>{
+      const newVal=plano[apId]||0;
+      const origVal=orig?.cuant?.[lbl]||0;
+      // En edición: si el nuevo valor es 0 pero había valor original,
+      // verificar si el checkbox estaba explícitamente desmarcado
+      const cb=document.getElementById('ap-cb-'+apId);
+      const cbDesmarcado=cb&&!cb.checked;
+      r.cuant[lbl]=(isEdit&&newVal===0&&origVal>0&&!cbDesmarcado)?origVal:newVal;
+    });
     r.docs={};
     TIPOS_DOC.forEach(t=>{ r.docs[t.l]=docsPlano[t.id]||0; });
     ['grupo','acciones','decomisos'].forEach(k=>{
@@ -4120,14 +4282,14 @@ async function guardarM1() {
     if(esEdicion){
       await gasPost({...payload,id:window._editandoM1});
       const i=D.m1.findIndex(x=>String(x.id)===String(window._editandoM1));
-      if(i>=0) D.m1[i]=normalizar({...D.m1[i],...payload,id:window._editandoM1},apPlano);
+      if(i>=0) D.m1[i]=normalizar({...D.m1[i],...payload,id:window._editandoM1},apPlano,true);
       window._editandoM1=null;
       const btn=document.querySelector('[onclick="guardarM1()"]');
       if(btn){btn.textContent='💾 Guardar';btn.style.background='';}
       renderTabla('m1'); toast('✅ Reporte actualizado');
     } else {
       const res=await gasPost(payload);
-      D.m1.unshift(normalizar({...payload,id:res.id},apPlano));
+      D.m1.unshift(normalizar({...payload,id:res.id},apPlano,false));
       if(res.consec){const el=document.getElementById('c-m1');if(el)el.textContent=res.consec;}
       renderTabla('m1'); toast('✅ Reporte guardado: '+res.id);
     }
@@ -4247,15 +4409,27 @@ function verSecuestro(id){
 function editarSecuestro(id, instId){
   const r=D.m3b.find(x=>String(x.id)===String(id));
   if(!r){toast('Registro no encontrado','danger');return;}
+  window['_editandoSecuestro_'+instId]=id;
   const setV=(elId,val)=>{const e=document.getElementById(elId);if(e)e.value=val||'';};
-  setV('sb-agente-'+instId, r.agente);
+  setV('sb-op-'+instId, r.op);
+  if(instId==='pml'){
+    setV('sb-pml-of', r.agente);
+  } else {
+    setV('sb-ag-'+instId, r.agente);
+  }
+  setV('sb-ced-'+instId, r.ced);
   setV('sb-causa-'+instId, r.causa);
   setV('sb-motivo-'+instId, r.motivo);
   setV('sb-fi-'+instId, r.fi);
   setV('sb-ff-'+instId, r.ff);
-  setV('sb-estado-'+instId, r.estado);
-  window['_editandoSecuestro_'+instId] = id;
-  toast('Cargado para edición. Modifique y guarde.','warning');
+  setV('sb-est-'+instId, r.estado||'Pendiente');
+  // Cambiar botón a Actualizar
+  const btn=document.querySelector(`[onclick="guardarSecuestro('${instId}')"]`);
+  if(btn){btn.textContent='💾 Actualizar';btn.style.background='var(--dorado)';}
+  // Scroll al formulario
+  const op=document.getElementById('sb-op-'+instId);
+  if(op)op.scrollIntoView({behavior:'smooth',block:'start'});
+  toast('✏️ Secuestro '+id+' cargado. Modifique y guarde.','warning');
 }
 
 function imprimirSecuestro(id){
@@ -4886,6 +5060,27 @@ function renderChartTemporal(){
         +`<td style="padding:4px 6px;border:1px solid #e2e8f0;text-align:center;">${byMonth[k].docs}</td>`
         +`</tr>`).join('');
   }
+}
+
+
+function limpiarSecuestro(instId){
+  const ids=['sb-op-','sb-ag-','sb-pml-of','sb-ced-','sb-causa-','sb-motivo-','sb-fi-','sb-ff-','sb-est-'];
+  ['sb-op-'+instId,'sb-ag-'+instId,'sb-ced-'+instId,'sb-causa-'+instId,
+   'sb-motivo-'+instId,'sb-fi-'+instId,'sb-ff-'+instId].forEach(id=>{
+    const e=document.getElementById(id);
+    if(e){
+      if(e.tagName==='SELECT') e.value='';
+      else if(e.tagName==='TEXTAREA'||e.type==='text') e.value='';
+    }
+  });
+  const est=document.getElementById('sb-est-'+instId);
+  if(est)est.value='Entregado';
+  const fi=document.getElementById('sb-fi-'+instId);
+  const ff=document.getElementById('sb-ff-'+instId);
+  if(fi)fi.value=hoy(); if(ff)ff.value=hoy();
+  window['_editandoSecuestro_'+instId]=null;
+  const btn=document.querySelector(`[onclick="guardarSecuestro('${instId}')"]`);
+  if(btn){btn.textContent='💾 Registrar';btn.style.background='';}
 }
 
 document.getElementById('lp')?.addEventListener('keydown',e=>{if(e.key==='Enter')login();});
