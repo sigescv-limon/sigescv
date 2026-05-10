@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="version" content="3.9-202605100520">
+<meta name="version" content="3.9-202605100544">
 <title>SIGESCV v2.0 — Policía Municipal de Limón</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -2275,8 +2275,8 @@ let USUARIOS=JSON.parse(localStorage.getItem('s_usr')||'null')||[
   {id:22,n:"Shaylin Yolieth Harvey Norman",c:"7-0193-0912",u:"sharvey",p:"esto2026",r:"estacionometro",e:"activo"}
 ];
 let UA=null;
-let C=JSON.parse(localStorage.getItem('s_c')||'{"m1":1,"m2":1,"m3a":1,"m4":1,"m7":1}');
-let D=JSON.parse(localStorage.getItem('s_d')||'{"m1":[],"m2":[],"m3a":[],"m3b":[],"m3c":[],"m4":[],"m7":[],"m7hist":{},"aud":[]}');
+let C; try { C=JSON.parse(localStorage.getItem('s_c')||'{"m1":1,"m2":1,"m3a":1,"m4":1,"m7":1}'); } catch(e) { localStorage.removeItem('s_c'); C={"m1":1,"m2":1,"m3a":1,"m4":1,"m7":1}; }
+let D; try { D=JSON.parse(localStorage.getItem('s_d')||'{"m1":[],"m2":[],"m3a":[],"m3b":[],"m3c":[],"m4":[],"m7":[],"m7hist":{},"aud":[]}'); } catch(e) { localStorage.removeItem('s_d'); D={"m1":[],"m2":[],"m3a":[],"m3b":[],"m3c":[],"m4":[],"m7":[],"m7hist":{},"aud":[]}; }
 let nInc=0,nImp=0,nOf=0,nAsis=0,nDec=0,chartRefs={};
 let pendingDel=null,editingM4=null;
 
