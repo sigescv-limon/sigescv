@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="version" content="3.9-202605101935">
+<meta name="version" content="3.9-202605101953">
 <title>SIGESCV v2.0 — Policía Municipal de Limón</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -1733,12 +1733,6 @@ tbody td{padding:8px 11px;}
 
 
 <script>
-window.onerror = function(msg, src, line, col, err) {
-  const el = document.getElementById('login-error');
-  if(el) { el.style.display='block'; el.textContent='Error: '+msg+' (L'+line+')'; }
-  return false;
-};
-
 
 // INICIALIZACIÓN SEGURA - Limpia localStorage corrupto automáticamente
 (function(){
@@ -2080,12 +2074,7 @@ function leerAccionesPoliciales() {
 
   AP_CAMPOS.forEach(([apId, lbl]) => {
     const cb = document.getElementById('ap-cb-'+apId);
-    // Acción activa si checkbox marcado O si el body está visible (click en header)
-    const bodyEl = document.getElementById('ap-body-'+apId);
-    const activa = cb?.checked || (bodyEl && bodyEl.style.display === 'block');
-    if (!activa) { apPlano[apId]=0; return; }
-    // Sincronizar el checkbox con el estado visual
-    if(cb && !cb.checked && activa) cb.checked = true;
+    if (!cb || !cb.checked) { apPlano[apId]=0; return; }
 
     // Leer cantidad
     const cntEl = document.getElementById('ap-cnt-'+apId);
