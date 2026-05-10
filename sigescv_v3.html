@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="version" content="3.8-202605100416">
+<meta name="version" content="3.9-202605100428">
 <title>SIGESCV v2.0 — Policía Municipal de Limón</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -4266,16 +4266,9 @@ async function guardarM1() {
     ...docsPlano
   };
   const normalizar=(r,plano,isEdit)=>{
-    const orig=isEdit?D.m1.find(x=>String(x.id)===String(window._editandoM1)):null;
     r.cuant={};
     AP_CAMPOS.forEach(([apId,lbl])=>{
-      const newVal=plano[apId]||0;
-      const origVal=orig?.cuant?.[lbl]||0;
-      // En edición: si el nuevo valor es 0 pero había valor original,
-      // verificar si el checkbox estaba explícitamente desmarcado
-      const cb=document.getElementById('ap-cb-'+apId);
-      const cbDesmarcado=cb&&!cb.checked;
-      r.cuant[lbl]=(isEdit&&newVal===0&&origVal>0&&!cbDesmarcado)?origVal:newVal;
+      r.cuant[lbl]=plano[apId]||0;
     });
     r.docs={};
     TIPOS_DOC.forEach(t=>{ r.docs[t.l]=docsPlano[t.id]||0; });
@@ -4290,6 +4283,9 @@ async function guardarM1() {
       await gasPost({...payload,id:window._editandoM1});
       const i=D.m1.findIndex(x=>String(x.id)===String(window._editandoM1));
       if(i>=0) D.m1[i]=normalizar({...D.m1[i],...payload,id:window._editandoM1},apPlano,true);
+      // Actualizar acciones en memoria para próximas ediciones
+      const iReg=D.m1.findIndex(x=>String(x.id)===String(window._editandoM1));
+      if(iReg>=0) D.m1[iReg].acciones=apData;
       window._editandoM1=null;
       const btn=document.querySelector('[onclick="guardarM1()"]');
       if(btn){btn.textContent='💾 Guardar';btn.style.background='';}
