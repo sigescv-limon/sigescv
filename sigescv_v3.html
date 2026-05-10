@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="version" content="3.6-202605091758">
+<meta name="version" content="3.7-202605100317">
 <title>SIGESCV v2.0 — Policía Municipal de Limón</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -1372,6 +1372,10 @@ tbody td{padding:8px 11px;}
       <button class="btn btn-warning" onclick="imprimirLlamados()">🖨️ Imprimir</button>
       <button class="btn btn-secondary" onclick="limpiarLlamados()">🗑️ Limpiar</button>
      </div>
+    <div class="card" style="margin-top:16px;">
+      <div class="card-header"><div class="card-titulo">📋 Llamados Registrados</div></div>
+      <div id="m3c-tabla-registros" style="padding:8px;"></div>
+    </div>
     </div>
     <div class="card"><div class="card-header"><div class="card-titulo">📊 Métricas</div></div><div id="metricas-guardas"><div class="alert alert-info">Las métricas se actualizan al guardar.</div></div></div>
    </div>
@@ -2535,7 +2539,7 @@ function editarM1(id){
 
     // Cargar acciones policiales simples
     AP_CAMPOS.forEach(([apId,lbl])=>{
-      const v=parseInt(r.cuant?.[lbl])||parseInt(r[apId])||0;
+      const v=parseInt(r.cuant?.[lbl])||parseInt(r[apId])||parseInt(accData[apId]?.cnt)||0;
       if(!v) return;
       const cb=document.getElementById('ap-cb-'+apId);
       const cnt=document.getElementById('ap-cnt-'+apId);
@@ -4308,7 +4312,8 @@ async function guardarM2() {
   try {
     if(esEdicion){
       const editId=window._editandoParte;
-      await gasPost({...payload,mod:'m2',action:'editar',id:editId});
+      const resEdit=await gasPost({...payload,mod:'m2',action:'editar',id:editId});
+      if(resEdit&&resEdit.error) throw new Error('Error al actualizar: '+resEdit.error);
       const idx=D.m2.findIndex(x=>String(x.id)===String(editId));
       if(idx>=0) D.m2[idx]={...D.m2[idx],...payload,id:editId};
       window._editandoParte=null;
@@ -4360,7 +4365,8 @@ async function guardarSecuestro(instId) {
   try {
     if(esEdicion){
       const editId=window['_editandoSecuestro_'+instId];
-      await gasPost({...payload,id:editId});
+      const resSecEdit=await gasPost({...payload,id:editId});
+      if(resSecEdit&&resSecEdit.error) throw new Error('Error al actualizar: '+resSecEdit.error);
       const i=D.m3b.findIndex(x=>String(x.id)===String(editId));
       if(i>=0) D.m3b[i]={...D.m3b[i],...payload,id:editId};
       window['_editandoSecuestro_'+instId]=null;
@@ -4466,12 +4472,54 @@ function imprimirSecuestro(id){
 
 // ── GUARDAR LLAMADOS ──────────────────────────────────────────
 async function guardarLlamados() {
+  const fi=document.getElementById('m3c-fi')?.value||'';
+  const ff=document.getElementById('m3c-ff')?.value||'';
+  const turno=document.getElementById('m3c-turno')?.value||'';
+  const op=document.getElementById('m3c-op')?.value||'';
+  if(!fi||!turno||!op){toast('Complete fecha inicio, turno y operador','warning');return;}
+
   const rows=[];
-  PUESTOS_BRAVO.forEach(p=>{const g=document.getElementById('g-'+p.id)?.value||'';rows.push({puesto:p.lbl,guarda:g});});
-  const payload={mod:'m3c',action:'crear',fi:document.getElementById('m3c-fi').value,ff:document.getElementById('m3c-ff').value,turno:document.getElementById('m3c-turno').value,op:document.getElementById('m3c-op').value,rows,u:UA.nombre};
+  PUESTOS_BRAVO.forEach(p=>{
+    const g=document.getElementById('g-'+p.id)?.value||'';
+    const resp={};
+    [1,2,3,4,5,6].forEach(h=>{
+      const btn=document.querySelector(`[data-puesto="${p.id}"][data-hora="${h}"]`);
+      resp['h'+h]=btn?.dataset?.resp||'—';
+    });
+    rows.push({puesto:p.lbl,guarda:g,...resp});
+  });
+
+  const esEdicion=!!window._editandoLlamado;
+  const payload={
+    mod:'m3c',
+    action:esEdicion?'editar':'crear',
+    fi,ff,turno,op,
+    rows:JSON.stringify(rows),
+    u:UA.nombre
+  };
+
   try {
-    await gasPost(payload);
-    D.m3c.push(payload); renderMetricas(); toast('✅ Registro guardado');
+    if(esEdicion){
+      const editId=window._editandoLlamado;
+      const res=await gasPost({...payload,id:editId});
+      if(res&&res.error) throw new Error(res.error);
+      const i=D.m3c.findIndex(x=>String(x.id)===String(editId));
+      if(i>=0) D.m3c[i]={...D.m3c[i],...payload,id:editId,
+        rows:Array.isArray(rows)?rows:JSON.parse(payload.rows)};
+      window._editandoLlamado=null;
+      const btn=document.querySelector('[onclick="guardarLlamados()"]');
+      if(btn){btn.textContent='💾 Guardar';btn.style.background='';}
+      toast('✅ Llamado actualizado');
+    } else {
+      const res=await gasPost(payload);
+      if(res&&res.error) throw new Error(res.error);
+      const nuevo={...payload,id:res.id,rows:Array.isArray(rows)?rows:JSON.parse(payload.rows)};
+      D.m3c.push(nuevo);
+      toast('✅ Llamado registrado: '+res.id);
+    }
+    renderMetricas();
+    renderTablaM3C();
+    limpiarLlamados();
   } catch(e){toast('❌ '+e.message,'danger');}
 }
 
@@ -4863,11 +4911,13 @@ function buildInformeHTML(){
         <thead><tr style="background:#1a3a5c;color:white;"><th style="padding:5px 8px;text-align:left;">Acción Policial</th><th style="padding:5px 8px;text-align:center;">Total</th><th style="padding:5px 8px;text-align:center;">%</th></tr></thead>
         <tbody>${AP_CAMPOS.map(([apId,lbl])=>{const v=totM1[lbl]||0;if(!v)return '';const pct=((v/totalM1)*100).toFixed(1);return '<tr><td style="padding:4px 8px;border:1px solid #ddd;">'+lbl+'</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;font-weight:700;">'+v+'</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;">'+pct+'%</td></tr>';}).join('')}</tbody>
       </table>
-      <p style="text-align:justify;line-height:1.7;">
+      <div style="height:220px;margin:12px 0 8px;"><canvas id="m6-chart-m1"></canvas></div>
+      <p style="text-align:justify;line-height:1.7;font-size:10pt;color:#444;">
+        El gráfico anterior refleja la distribución de las acciones policiales durante el período evaluado.
         ${totM1['PERSONAS DETENIDAS']?'Se realizaron <strong>'+totM1['PERSONAS DETENIDAS']+' detenciones</strong>, ':''}
         ${totM1['CAPTURAS PENALES']?'<strong>'+totM1['CAPTURAS PENALES']+' capturas penales</strong>, ':''}
         ${totM1['PERSONAS ABORDADAS']?'y se abordaron <strong>'+totM1['PERSONAS ABORDADAS']+' personas</strong> durante patrullajes y controles.':''}
-        Estos datos reflejan la presencia activa y constante del cuerpo policial en el cantón.
+        Estos resultados evidencian la presencia activa y constante del cuerpo policial en el cantón, contribuyendo directamente a la seguridad ciudadana.
       </p>
     </div>`;
 
@@ -4898,6 +4948,7 @@ function buildInformeHTML(){
         La Unidad de Programas Preventivos realizó <strong>${totalM4} visitas</strong> a centros educativos del cantón, beneficiando a un total de <strong>${totalEst} estudiantes</strong>. Estas actividades, enmarcadas en programas como GREAT y otros de prevención del delito, contribuyen a fortalecer la cultura de legalidad y convivencia pacífica desde las etapas formativas.
       </p>
       ${progRows?'<table style="width:100%;border-collapse:collapse;font-size:10pt;"><thead><tr style="background:#1a3a5c;color:white;"><th style="padding:5px 8px;text-align:left;">Programa</th><th style="padding:5px 8px;text-align:center;">Visitas</th><th style="padding:5px 8px;text-align:center;">%</th></tr></thead><tbody>'+progRows+'</tbody></table>':''}
+      ${totalM4>0?`<div style="height:180px;margin:12px 0 8px;"><canvas id="m6-chart-m4"></canvas></div><p style="text-align:justify;line-height:1.7;font-size:10pt;color:#444;">La distribución por programa preventivo ilustra la cobertura de intervención en los centros educativos del cantón. El enfoque multidisciplinario de los programas garantiza un abordaje integral de la prevención del delito desde las etapas formativas.</p>`:''}
     </div>`;
 
   // ── Sección M7 ───────────────────────────────────────
@@ -4962,6 +5013,8 @@ function previsualizarInforme(){
   if(prev){
     prev.innerHTML='<div style="padding:20px;background:white;border:1px solid #ddd;border-radius:8px;margin-top:16px;">'+html+'</div>';
     prev.scrollIntoView({behavior:'smooth',block:'start'});
+    // Renderizar gráficos después de insertar el HTML
+    setTimeout(()=>renderM6Charts(),150);
   }
 }
 
@@ -5081,6 +5134,222 @@ function limpiarSecuestro(instId){
   window['_editandoSecuestro_'+instId]=null;
   const btn=document.querySelector(`[onclick="guardarSecuestro('${instId}')"]`);
   if(btn){btn.textContent='💾 Registrar';btn.style.background='';}
+}
+
+
+// ════════════════════════════════════════════════════════
+// M3C — TABLA DE LLAMADOS REGISTRADOS + CRUD
+// ════════════════════════════════════════════════════════
+
+function renderTablaM3C(){
+  const cont=document.getElementById('m3c-tabla-registros');
+  if(!cont)return;
+  if(!D.m3c.length){
+    cont.innerHTML='<p style="color:#999;text-align:center;padding:12px;">Sin llamados registrados.</p>';
+    return;
+  }
+  const MAPA_TURNO={'t1':'06:00-14:00','t2':'14:00-22:00','t3':'22:00-06:00'};
+  const filas=D.m3c.slice().reverse().map(r=>`
+    <tr>
+      <td><span class="badge badge-azul" style="font-size:11px;">${r.id||'—'}</span></td>
+      <td style="font-size:11px;">${r.fi||'—'}</td>
+      <td style="font-size:11px;">${r.ff||'—'}</td>
+      <td style="font-size:11px;">${MAPA_TURNO[r.turno]||r.turno||'—'}</td>
+      <td style="font-size:11px;">${r.op?.split('—')[1]?.trim()||r.op||'—'}</td>
+      <td style="text-align:center;">
+        <span class="badge badge-verde">${(Array.isArray(r.rows)?r.rows:JSON.parse(r.rows||'[]')).filter(x=>x.guarda&&!x.guarda.includes('x7')&&x.guarda!=='').length}</span>
+      </td>
+      <td style="white-space:nowrap;text-align:center;">
+        <button class="btn btn-secondary btn-sm" onclick="verLlamado('${r.id}')" title="Ver">👁️</button>
+        <button class="btn btn-warning btn-sm" onclick="editarLlamado('${r.id}')" title="Editar">✏️</button>
+        <button class="btn btn-primary btn-sm" onclick="imprimirLlamado('${r.id}')" title="Imprimir">🖨️</button>
+        <button class="btn btn-danger btn-sm" onclick="eliminarLlamado('${r.id}')" title="Eliminar">🗑️</button>
+      </td>
+    </tr>`).join('');
+
+  cont.innerHTML=`
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead>
+        <tr style="background:#1a3a5c;color:white;">
+          <th style="padding:6px 8px;">N°</th>
+          <th style="padding:6px 8px;">F. Inicio</th>
+          <th style="padding:6px 8px;">F. Fin</th>
+          <th style="padding:6px 8px;">Turno</th>
+          <th style="padding:6px 8px;">Operador</th>
+          <th style="padding:6px 8px;text-align:center;">Activos</th>
+          <th style="padding:6px 8px;text-align:center;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+}
+
+function verLlamado(id){
+  const r=D.m3c.find(x=>String(x.id)===String(id));
+  if(!r){toast('Registro no encontrado','danger');return;}
+  const rows=Array.isArray(r.rows)?r.rows:(typeof r.rows==='string'?JSON.parse(r.rows||'[]'):[]);
+  const MAPA_TURNO={'t1':'06:00-14:00','t2':'14:00-22:00','t3':'22:00-06:00'};
+  const modal=document.getElementById('modal-confirm');
+  const cont=document.getElementById('modal-confirm-msg');
+  if(cont){
+    cont.innerHTML=`<div style="max-height:60vh;overflow-y:auto;font-size:12px;">
+      <h4 style="color:#1a3a5c;margin-bottom:8px;">${r.id} — ${MAPA_TURNO[r.turno]||r.turno}</h4>
+      <p><strong>Período:</strong> ${r.fi||''} al ${r.ff||''}</p>
+      <p><strong>Operador:</strong> ${r.op||''}</p>
+      <table style="width:100%;border-collapse:collapse;margin-top:8px;">
+        <thead><tr style="background:#1a3a5c;color:white;"><th style="padding:4px 6px;">Puesto</th><th style="padding:4px 6px;">Guarda</th></tr></thead>
+        <tbody>${rows.map((row,i)=>`<tr style="background:${i%2?'#f5f5f5':'white'}"><td style="padding:4px 6px;border:1px solid #eee;">${row.puesto}</td><td style="padding:4px 6px;border:1px solid #eee;">${row.guarda||'— Sin asignar —'}</td></tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+    modal.classList.add('open');
+    document.body.classList.add('modal-open');
+  }
+}
+
+function editarLlamado(id){
+  const r=D.m3c.find(x=>String(x.id)===String(id));
+  if(!r){toast('Registro no encontrado','danger');return;}
+  const setV=(elId,val)=>{const e=document.getElementById(elId);if(e)e.value=val||'';};
+  setV('m3c-fi',r.fi); setV('m3c-ff',r.ff);
+  setV('m3c-turno',r.turno); setV('m3c-op',r.op);
+  // Restaurar guardas
+  const rows=Array.isArray(r.rows)?r.rows:(typeof r.rows==='string'?JSON.parse(r.rows||'[]'):[]);
+  rows.forEach(row=>{
+    const puesto=PUESTOS_BRAVO.find(p=>p.lbl===row.puesto);
+    if(puesto){const sel=document.getElementById('g-'+puesto.id);if(sel)sel.value=row.guarda||'';}
+  });
+  window._editandoLlamado=id;
+  const btn=document.querySelector('[onclick="guardarLlamados()"]');
+  if(btn){btn.textContent='💾 Actualizar Llamado';btn.style.background='var(--dorado)';}
+  const cont=document.getElementById('wf-mod3-llamados');
+  if(cont)cont.scrollIntoView({behavior:'smooth',block:'start'});
+  toast('✏️ Llamado '+id+' cargado. Modifique y guarde.','warning');
+}
+
+function imprimirLlamado(id){
+  const r=D.m3c.find(x=>String(x.id)===String(id));
+  if(!r){toast('Registro no encontrado','danger');return;}
+  const rows=Array.isArray(r.rows)?r.rows:(typeof r.rows==='string'?JSON.parse(r.rows||'[]'):[]);
+  const MAPA_TURNO={'t1':'06:00 a 14:00 horas','t2':'14:00 a 22:00 horas','t3':'22:00 a 06:00 horas'};
+  const activos=rows.filter(x=>x.guarda&&!x.guarda.includes('x7')&&x.guarda!=='').length;
+  const vacantes=rows.filter(x=>!x.guarda||x.guarda===''||x.guarda.includes('x7')).length;
+  const filasTabla=rows.map((row,i)=>`<tr style="background:${i%2?'#f5f5f5':'white'}">
+    <td style="padding:5px 8px;border:1px solid #ddd;">${row.puesto}</td>
+    <td style="padding:5px 8px;border:1px solid #ddd;">${row.guarda||'— Vacante —'}</td>
+    <td style="padding:5px 8px;border:1px solid #ddd;text-align:center;">
+      ${(!row.guarda||row.guarda===''||row.guarda.includes('x7'))?'<span style="color:#c0392b;">Vacante</span>':'<span style="color:#1e5c2e;">✓ Asignado</span>'}
+    </td>
+  </tr>`).join('');
+  print2(`<div style="max-width:100%;font-family:Arial,sans-serif;font-size:11pt;">
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a3a5c;padding-bottom:10px;margin-bottom:14px;">
+      <img src="${I_DSE||I_PML}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
+      <div style="text-align:center;flex:1;">
+        <div style="font-weight:700;font-size:13pt;color:#1a3a5c;">MUNICIPALIDAD DEL CANTÓN CENTRAL DE LIMÓN</div>
+        <div>Centro de Video Protección — DSE</div>
+        <div style="font-weight:700;font-size:12pt;margin-top:4px;">LLAMADOS RADIALES A GUARDAS</div>
+        <div style="font-size:10pt;color:#555;">${r.id||''}</div>
+      </div>
+      <img src="${I_MUNI}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:12px;">
+      <tr>
+        <td style="padding:4px 8px;border:1px solid #ddd;width:25%;"><strong>F. Inicio:</strong> ${r.fi||''}</td>
+        <td style="padding:4px 8px;border:1px solid #ddd;width:25%;"><strong>F. Fin:</strong> ${r.ff||''}</td>
+        <td style="padding:4px 8px;border:1px solid #ddd;width:25%;"><strong>Turno:</strong> ${MAPA_TURNO[r.turno]||r.turno||''}</td>
+        <td style="padding:4px 8px;border:1px solid #ddd;"><strong>Operador:</strong> ${r.op||''}</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 8px;border:1px solid #ddd;"><strong>Puestos activos:</strong> ${activos}</td>
+        <td style="padding:4px 8px;border:1px solid #ddd;"><strong>Puestos vacantes:</strong> ${vacantes}</td>
+        <td colspan="2" style="padding:4px 8px;border:1px solid #ddd;"><strong>Total puestos:</strong> ${rows.length}</td>
+      </tr>
+    </table>
+    <table style="width:100%;border-collapse:collapse;font-size:10pt;">
+      <thead><tr style="background:#1a3a5c;color:white;">
+        <th style="padding:5px 8px;text-align:left;">Puesto</th>
+        <th style="padding:5px 8px;text-align:left;">Guarda Asignado</th>
+        <th style="padding:5px 8px;text-align:center;">Estado</th>
+      </tr></thead>
+      <tbody>${filasTabla}</tbody>
+    </table>
+    <div style="text-align:center;margin-top:18px;font-size:9pt;color:#999;border-top:1px solid #ddd;padding-top:6px;">"Limón Ciudad de la Vida" · ${r.id||''}</div>
+  </div>`);
+}
+
+async function eliminarLlamado(id){
+  if(!confirm('¿Eliminar este llamado? Esta acción no se puede deshacer.')) return;
+  try {
+    const res=await gasPost({mod:'m3c',action:'eliminar',id});
+    if(res&&res.error) throw new Error(res.error);
+    D.m3c=D.m3c.filter(x=>String(x.id)!==String(id));
+    renderTablaM3C();
+    renderMetricas();
+    toast('Llamado eliminado','warning');
+  } catch(e){toast('❌ '+e.message,'danger');}
+}
+
+
+// ════════════════════════════════════════════════════════
+// MÓDULO 6 — RENDERIZAR GRÁFICOS DENTRO DEL INFORME
+// ════════════════════════════════════════════════════════
+function renderM6Charts(){
+  // Gráfico M1 — acciones policiales
+  const cvM1=document.getElementById('m6-chart-m1');
+  if(cvM1&&D.m1.length){
+    if(window._m6chartM1) window._m6chartM1.destroy();
+    const tots={};
+    AP_CAMPOS.forEach(([apId,lbl])=>{tots[lbl]=0;});
+    D.m1.forEach(r=>{ AP_CAMPOS.forEach(([apId,lbl])=>{ tots[lbl]+=(parseInt(r.cuant?.[lbl])||parseInt(r[apId])||0); }); });
+    const labels=[],values=[];
+    AP_CAMPOS.forEach(([apId,lbl])=>{ if(tots[lbl]>0){labels.push(lbl.length>18?lbl.substring(0,18)+'…':lbl);values.push(tots[lbl]);} });
+    const total=values.reduce((a,b)=>a+b,0)||1;
+    window._m6chartM1=new Chart(cvM1,{
+      type:'bar',
+      data:{labels,datasets:[{label:'Total',data:values,backgroundColor:'rgba(26,58,92,0.75)',borderColor:'#1a3a5c',borderWidth:1}]},
+      plugins:[{id:'lbl',afterDraw(chart){
+        const ctx=chart.ctx;ctx.save();ctx.font='bold 9px Arial';ctx.fillStyle='#1a3a5c';ctx.textAlign='center';ctx.textBaseline='bottom';
+        chart.data.datasets.forEach((ds,i)=>chart.getDatasetMeta(i).data.forEach((bar,j)=>{const v=ds.data[j];if(v>0)ctx.fillText(v+' ('+(v/total*100).toFixed(1)+'%)',bar.x,bar.y-2);}));
+        ctx.restore();
+      }}],
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true},x:{ticks:{font:{size:8}}}}}
+    });
+  }
+
+  // Gráfico M4 — programas preventivos
+  const cvM4=document.getElementById('m6-chart-m4');
+  if(cvM4&&D.m4.length){
+    if(window._m6chartM4) window._m6chartM4.destroy();
+    const progs={};
+    D.m4.forEach(r=>{ const k=r.prog||'Sin programa'; progs[k]=(progs[k]||0)+1; });
+    const total=Object.values(progs).reduce((a,b)=>a+b,0)||1;
+    window._m6chartM4=new Chart(cvM4,{
+      type:'doughnut',
+      data:{labels:Object.keys(progs),datasets:[{data:Object.values(progs),backgroundColor:['#1a3a5c','#c9942a','#1e5c2e','#8b1a1a','#2e4a7a','#5c3d1a'],borderWidth:2}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9}}},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw} (${((ctx.raw/total)*100).toFixed(1)}%)`}}}}
+    });
+  }
+
+  // Gráfico M7 — estacionómetros por mes
+  const cvM7=document.getElementById('m6-chart-m7');
+  if(cvM7&&D.m7.length){
+    if(window._m6chartM7) window._m6chartM7.destroy();
+    const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const infData=new Array(12).fill(0);
+    const mtoData=new Array(12).fill(0);
+    D.m7.forEach(r=>{const m=parseInt(r.mes)-1;if(m>=0&&m<12){infData[m]+=(parseInt(r.inf)||0);mtoData[m]+=(parseInt(r.monto)||0);}});
+    const totalInf=infData.reduce((a,b)=>a+b,0)||1;
+    window._m6chartM7=new Chart(cvM7,{
+      type:'bar',
+      data:{labels:MESES,datasets:[
+        {label:'Infracciones',data:infData,backgroundColor:'rgba(26,58,92,0.75)',borderColor:'#1a3a5c',borderWidth:1,yAxisID:'y'},
+        {label:'Monto ₡',data:mtoData,backgroundColor:'rgba(201,148,42,0.5)',borderColor:'#c9942a',borderWidth:1,yAxisID:'y1'}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{tooltip:{callbacks:{label:ctx=>ctx.datasetIndex===0?` Infracciones: ${ctx.raw} (${((ctx.raw/totalInf)*100).toFixed(1)}%)`:` ₡${ctx.raw.toLocaleString()}`}}},
+        scales:{y:{beginAtZero:true,position:'left'},y1:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false}}}
+      }
+    });
+  }
 }
 
 document.getElementById('lp')?.addEventListener('keydown',e=>{if(e.key==='Enter')login();});
