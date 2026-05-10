@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="version" content="3.9-202605100442">
+<meta name="version" content="3.9-202605100450">
 <title>SIGESCV v2.0 — Policía Municipal de Limón</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -1872,10 +1872,10 @@ const AP_CONTADORES = {};  // id → contador de items
 
 // ── TOGGLE AP ─────────────────────────────────────────────────
 function toggleAP(apId) {
-  const cb  = document.getElementById('ap-cb-'+apId);
+  const cb   = document.getElementById('ap-cb-'+apId);
   const body = document.getElementById('ap-body-'+apId);
-  if (!cb || !body) return;
-  body.style.display = cb.checked ? 'block' : 'none';
+  if (!cb) return;
+  if (body) body.style.display = cb.checked ? 'block' : 'none';
 }
 
 // ── AGREGAR DETALLE DINÁMICO ──────────────────────────────────
