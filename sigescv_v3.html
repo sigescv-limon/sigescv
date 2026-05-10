@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="version" content="3.9-202605101953">
+<meta name="version" content="3.9-202605102152">
 <title>SIGESCV v2.0 — Policía Municipal de Limón</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -1733,23 +1733,6 @@ tbody td{padding:8px 11px;}
 
 
 <script>
-
-// INICIALIZACIÓN SEGURA - Limpia localStorage corrupto automáticamente
-(function(){
-  try {
-    const testD = localStorage.getItem('s_d');
-    const testC = localStorage.getItem('s_c');
-    const testU = localStorage.getItem('s_usr');
-    if(testD) JSON.parse(testD);
-    if(testC) JSON.parse(testC);
-    if(testU) JSON.parse(testU);
-  } catch(e) {
-    console.warn('localStorage corrupto detectado, limpiando...', e);
-    localStorage.removeItem('s_d');
-    localStorage.removeItem('s_c');
-    localStorage.removeItem('s_usr');
-  }
-})();
 
 
 
