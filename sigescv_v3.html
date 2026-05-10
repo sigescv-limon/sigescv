@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="version" content="3.7-202605100317">
+<meta name="version" content="3.8-202605100416">
 <title>SIGESCV v2.0 — Policía Municipal de Limón</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -685,7 +685,7 @@ tbody td{padding:8px 11px;}
 <div id="m1-acciones-policiales">
 
   <div class="accion-policial" id="ap-item-ap1">
-    <div class="ap-header" onclick="toggleAP('ap1')">
+    <div class="ap-header" onclick="toggleAP('ap1', true)">
       <input type="checkbox" id="ap-cb-ap1" onchange="toggleAP('ap1')">
       <span class="ap-label">CONTROL DE CARRETERA</span>
       <input type="number" id="ap-cnt-ap1" class="ap-cnt" min="0" value="0"
@@ -717,7 +717,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap2">
-    <div class="ap-header" onclick="toggleAP('ap2')">
+    <div class="ap-header" onclick="toggleAP('ap2', true)">
       <input type="checkbox" id="ap-cb-ap2" onchange="toggleAP('ap2')">
       <span class="ap-label">PERSONAS ABORDADAS</span>
       <input type="number" id="ap-cnt-ap2" class="ap-cnt" min="0" value="0"
@@ -725,7 +725,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap3">
-    <div class="ap-header" onclick="toggleAP('ap3')">
+    <div class="ap-header" onclick="toggleAP('ap3', true)">
       <input type="checkbox" id="ap-cb-ap3" onchange="toggleAP('ap3')">
       <span class="ap-label">PERSONAS INVESTIGADAS ECU-OIJ</span>
       <input type="number" id="ap-cnt-ap3" class="ap-cnt" min="0" value="0"
@@ -738,7 +738,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap4">
-    <div class="ap-header" onclick="toggleAP('ap4')">
+    <div class="ap-header" onclick="toggleAP('ap4', true)">
       <input type="checkbox" id="ap-cb-ap4" onchange="toggleAP('ap4')">
       <span class="ap-label">VEHÍCULOS ABORDADOS</span>
       <input type="number" id="ap-cnt-ap4" class="ap-cnt" min="0" value="0"
@@ -746,7 +746,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap5">
-    <div class="ap-header" onclick="toggleAP('ap5')">
+    <div class="ap-header" onclick="toggleAP('ap5', true)">
       <input type="checkbox" id="ap-cb-ap5" onchange="toggleAP('ap5')">
       <span class="ap-label">VEHÍCULOS INVESTIGADOS ECU-OIJ</span>
       <input type="number" id="ap-cnt-ap5" class="ap-cnt" min="0" value="0"
@@ -759,7 +759,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap6">
-    <div class="ap-header" onclick="toggleAP('ap6')">
+    <div class="ap-header" onclick="toggleAP('ap6', true)">
       <input type="checkbox" id="ap-cb-ap6" onchange="toggleAP('ap6')">
       <span class="ap-label">MOTOCICLETAS ABORDADAS</span>
       <input type="number" id="ap-cnt-ap6" class="ap-cnt" min="0" value="0"
@@ -767,7 +767,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap7">
-    <div class="ap-header" onclick="toggleAP('ap7')">
+    <div class="ap-header" onclick="toggleAP('ap7', true)">
       <input type="checkbox" id="ap-cb-ap7" onchange="toggleAP('ap7')">
       <span class="ap-label">MOTOCICLETAS INVESTIGADAS ECU-OIJ</span>
       <input type="number" id="ap-cnt-ap7" class="ap-cnt" min="0" value="0"
@@ -775,7 +775,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap8">
-    <div class="ap-header" onclick="toggleAP('ap8')">
+    <div class="ap-header" onclick="toggleAP('ap8', true)">
       <input type="checkbox" id="ap-cb-ap8" onchange="toggleAP('ap8')">
       <span class="ap-label">PERSONAS DETENIDAS</span>
       <span class="ap-cnt-auto" id="ap-cnt-ap8" style="background:#e8eef4;padding:2px 10px;border-radius:5px;font-size:12px;font-weight:700;min-width:40px;text-align:center;">0</span>
@@ -786,7 +786,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap9">
-    <div class="ap-header" onclick="toggleAP('ap9')">
+    <div class="ap-header" onclick="toggleAP('ap9', true)">
       <input type="checkbox" id="ap-cb-ap9" onchange="toggleAP('ap9')">
       <span class="ap-label">CAPTURAS PENALES</span>
       <span class="ap-cnt-auto" id="ap-cnt-ap9" style="background:#e8eef4;padding:2px 10px;border-radius:5px;font-size:12px;font-weight:700;min-width:40px;text-align:center;">0</span>
@@ -797,7 +797,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap10">
-    <div class="ap-header" onclick="toggleAP('ap10')">
+    <div class="ap-header" onclick="toggleAP('ap10', true)">
       <input type="checkbox" id="ap-cb-ap10" onchange="toggleAP('ap10')">
       <span class="ap-label">CAPTURAS POR PENSIÓN ALIMENTARIA</span>
       <span class="ap-cnt-auto" id="ap-cnt-ap10" style="background:#e8eef4;padding:2px 10px;border-radius:5px;font-size:12px;font-weight:700;min-width:40px;text-align:center;">0</span>
@@ -808,7 +808,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap11">
-    <div class="ap-header" onclick="toggleAP('ap11')">
+    <div class="ap-header" onclick="toggleAP('ap11', true)">
       <input type="checkbox" id="ap-cb-ap11" onchange="toggleAP('ap11')">
       <span class="ap-label">ÓRDENES DE PRESENTACIÓN</span>
       <span class="ap-cnt-auto" id="ap-cnt-ap11" style="background:#e8eef4;padding:2px 10px;border-radius:5px;font-size:12px;font-weight:700;min-width:40px;text-align:center;">0</span>
@@ -819,7 +819,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap12">
-    <div class="ap-header" onclick="toggleAP('ap12')">
+    <div class="ap-header" onclick="toggleAP('ap12', true)">
       <input type="checkbox" id="ap-cb-ap12" onchange="toggleAP('ap12')">
       <span class="ap-label">PERSONAS RESEÑADAS</span>
       <input type="number" id="ap-cnt-ap12" class="ap-cnt" min="0" value="0"
@@ -832,7 +832,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap13">
-    <div class="ap-header" onclick="toggleAP('ap13')">
+    <div class="ap-header" onclick="toggleAP('ap13', true)">
       <input type="checkbox" id="ap-cb-ap13" onchange="toggleAP('ap13')">
       <span class="ap-label">COLABORACIÓN A OTROS DEPARTAMENTOS</span>
       <input type="number" id="ap-cnt-ap13" class="ap-cnt" min="0" value="0"
@@ -846,7 +846,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap14">
-    <div class="ap-header" onclick="toggleAP('ap14')">
+    <div class="ap-header" onclick="toggleAP('ap14', true)">
       <input type="checkbox" id="ap-cb-ap14" onchange="toggleAP('ap14')">
       <span class="ap-label">INTERVENCIÓN DE VENTAS AMBULANTES</span>
       <span class="ap-cnt-auto" id="ap-cnt-ap14" style="background:#e8eef4;padding:2px 10px;border-radius:5px;font-size:12px;font-weight:700;min-width:40px;text-align:center;">0</span>
@@ -859,7 +859,7 @@ tbody td{padding:8px 11px;}
   </div>
 
   <div class="accion-policial" id="ap-item-ap15">
-    <div class="ap-header" onclick="toggleAP('ap15')">
+    <div class="ap-header" onclick="toggleAP('ap15', true)">
       <input type="checkbox" id="ap-cb-ap15" onchange="toggleAP('ap15')">
       <span class="ap-label">RECUPERACIÓN DE VEHÍCULO ROBADO</span>
       <input type="number" id="ap-cnt-ap15" class="ap-cnt" min="0" value="0"
@@ -872,7 +872,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap16">
-    <div class="ap-header" onclick="toggleAP('ap16')">
+    <div class="ap-header" onclick="toggleAP('ap16', true)">
       <input type="checkbox" id="ap-cb-ap16" onchange="toggleAP('ap16')">
       <span class="ap-label">COLISIÓN SIN HERIDOS</span>
       <input type="number" id="ap-cnt-ap16" class="ap-cnt" min="0" value="0"
@@ -883,7 +883,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap17">
-    <div class="ap-header" onclick="toggleAP('ap17')">
+    <div class="ap-header" onclick="toggleAP('ap17', true)">
       <input type="checkbox" id="ap-cb-ap17" onchange="toggleAP('ap17')">
       <span class="ap-label">COLISIÓN CON HERIDOS Y/O FALLECIDOS</span>
       <input type="number" id="ap-cnt-ap17" class="ap-cnt" min="0" value="0"
@@ -897,7 +897,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap18">
-    <div class="ap-header" onclick="toggleAP('ap18')">
+    <div class="ap-header" onclick="toggleAP('ap18', true)">
       <input type="checkbox" id="ap-cb-ap18" onchange="toggleAP('ap18')">
       <span class="ap-label">OPERATIVO DE TRÁNSITO</span>
       <input type="number" id="ap-cnt-ap18" class="ap-cnt" min="0" value="0"
@@ -913,7 +913,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap19">
-    <div class="ap-header" onclick="toggleAP('ap19')">
+    <div class="ap-header" onclick="toggleAP('ap19', true)">
       <input type="checkbox" id="ap-cb-ap19" onchange="toggleAP('ap19')">
       <span class="ap-label">DROGA DECOMISADA</span>
       <input type="number" id="ap-cnt-ap19" class="ap-cnt" min="0" value="0"
@@ -926,7 +926,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap20">
-    <div class="ap-header" onclick="toggleAP('ap20')">
+    <div class="ap-header" onclick="toggleAP('ap20', true)">
       <input type="checkbox" id="ap-cb-ap20" onchange="toggleAP('ap20')">
       <span class="ap-label">DROGA HALLADA</span>
       <input type="number" id="ap-cnt-ap20" class="ap-cnt" min="0" value="0"
@@ -939,7 +939,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap21">
-    <div class="ap-header" onclick="toggleAP('ap21')">
+    <div class="ap-header" onclick="toggleAP('ap21', true)">
       <input type="checkbox" id="ap-cb-ap21" onchange="toggleAP('ap21')">
       <span class="ap-label">DECOMISO DE ARMAS</span>
       <input type="number" id="ap-cnt-ap21" class="ap-cnt" min="0" value="0"
@@ -952,7 +952,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap22">
-    <div class="ap-header" onclick="toggleAP('ap22')">
+    <div class="ap-header" onclick="toggleAP('ap22', true)">
       <input type="checkbox" id="ap-cb-ap22" onchange="toggleAP('ap22')">
       <span class="ap-label">DECOMISO DE VENTAS ILEGALES</span>
       <input type="number" id="ap-cnt-ap22" class="ap-cnt" min="0" value="0"
@@ -965,7 +965,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap23">
-    <div class="ap-header" onclick="toggleAP('ap23')">
+    <div class="ap-header" onclick="toggleAP('ap23', true)">
       <input type="checkbox" id="ap-cb-ap23" onchange="toggleAP('ap23')">
       <span class="ap-label">CLAUSURA DE LOCAL COMERCIAL</span>
       <input type="number" id="ap-cnt-ap23" class="ap-cnt" min="0" value="0"
@@ -978,7 +978,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap24">
-    <div class="ap-header" onclick="toggleAP('ap24')">
+    <div class="ap-header" onclick="toggleAP('ap24', true)">
       <input type="checkbox" id="ap-cb-ap24" onchange="toggleAP('ap24')">
       <span class="ap-label">CLAUSURA DE SITIO CLANDESTINO</span>
       <input type="number" id="ap-cnt-ap24" class="ap-cnt" min="0" value="0"
@@ -991,7 +991,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap25">
-    <div class="ap-header" onclick="toggleAP('ap25')">
+    <div class="ap-header" onclick="toggleAP('ap25', true)">
       <input type="checkbox" id="ap-cb-ap25" onchange="toggleAP('ap25')">
       <span class="ap-label">DISTURBIO Y/O RIÑAS</span>
       <input type="number" id="ap-cnt-ap25" class="ap-cnt" min="0" value="0"
@@ -1004,7 +1004,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap26">
-    <div class="ap-header" onclick="toggleAP('ap26')">
+    <div class="ap-header" onclick="toggleAP('ap26', true)">
       <input type="checkbox" id="ap-cb-ap26" onchange="toggleAP('ap26')">
       <span class="ap-label">ATENCIÓN A CENTRO EDUCATIVO</span>
       <input type="number" id="ap-cnt-ap26" class="ap-cnt" min="0" value="0"
@@ -1017,7 +1017,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap27">
-    <div class="ap-header" onclick="toggleAP('ap27')">
+    <div class="ap-header" onclick="toggleAP('ap27', true)">
       <input type="checkbox" id="ap-cb-ap27" onchange="toggleAP('ap27')">
       <span class="ap-label">TRASLADO DE HERIDOS A CENTRO MÉDICO</span>
       <input type="number" id="ap-cnt-ap27" class="ap-cnt" min="0" value="0"
@@ -1030,7 +1030,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap28">
-    <div class="ap-header" onclick="toggleAP('ap28')">
+    <div class="ap-header" onclick="toggleAP('ap28', true)">
       <input type="checkbox" id="ap-cb-ap28" onchange="toggleAP('ap28')">
       <span class="ap-label">AYUDA A CIUDADANO</span>
       <input type="number" id="ap-cnt-ap28" class="ap-cnt" min="0" value="0"
@@ -1038,7 +1038,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap29">
-    <div class="ap-header" onclick="toggleAP('ap29')">
+    <div class="ap-header" onclick="toggleAP('ap29', true)">
       <input type="checkbox" id="ap-cb-ap29" onchange="toggleAP('ap29')">
       <span class="ap-label">MENORES EN RIESGO SOCIAL</span>
       <input type="number" id="ap-cnt-ap29" class="ap-cnt" min="0" value="0"
@@ -1051,7 +1051,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap30">
-    <div class="ap-header" onclick="toggleAP('ap30')">
+    <div class="ap-header" onclick="toggleAP('ap30', true)">
       <input type="checkbox" id="ap-cb-ap30" onchange="toggleAP('ap30')">
       <span class="ap-label">HALLAZGO DE CADÁVER</span>
       <input type="number" id="ap-cnt-ap30" class="ap-cnt" min="0" value="0"
@@ -1064,7 +1064,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap31">
-    <div class="ap-header" onclick="toggleAP('ap31')">
+    <div class="ap-header" onclick="toggleAP('ap31', true)">
       <input type="checkbox" id="ap-cb-ap31" onchange="toggleAP('ap31')">
       <span class="ap-label">LICOR DECOMISADO</span>
       <input type="number" id="ap-cnt-ap31" class="ap-cnt" min="0" value="0"
@@ -1084,7 +1084,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap32">
-    <div class="ap-header" onclick="toggleAP('ap32')">
+    <div class="ap-header" onclick="toggleAP('ap32', true)">
       <input type="checkbox" id="ap-cb-ap32" onchange="toggleAP('ap32')">
       <span class="ap-label">REGULACIÓN DE TRÁNSITO</span>
       <input type="number" id="ap-cnt-ap32" class="ap-cnt" min="0" value="0"
@@ -1098,7 +1098,7 @@ tbody td{padding:8px 11px;}
     </div>
   </div>
   <div class="accion-policial" id="ap-item-ap33">
-    <div class="ap-header" onclick="toggleAP('ap33')">
+    <div class="ap-header" onclick="toggleAP('ap33', true)">
       <input type="checkbox" id="ap-cb-ap33" onchange="toggleAP('ap33')">
       <span class="ap-label">PATRULLAJE PREVENTIVO</span>
       <input type="number" id="ap-cnt-ap33" class="ap-cnt" min="0" value="0"
@@ -1840,10 +1840,13 @@ const AP_AUTO = ["ap8", "ap9", "ap10", "ap11", "ap14"];
 const AP_CONTADORES = {};  // id → contador de items
 
 // ── TOGGLE AP ─────────────────────────────────────────────────
-function toggleAP(apId) {
+function toggleAP(apId, fromHeader) {
   const cb  = document.getElementById('ap-cb-'+apId);
   const body = document.getElementById('ap-body-'+apId);
   if (!cb || !body) return;
+  // Si viene del header (click en el div, no en el checkbox),
+  // hay que cambiar el estado del checkbox manualmente
+  if(fromHeader) cb.checked = !cb.checked;
   const active = cb.checked;
   body.style.display = active ? 'block' : 'none';
 }
