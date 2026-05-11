@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="version" content="2.1-202605070530">
+<meta name="version" content="3.0-202605110519">
 <title>SIGESCV v2.0 — Policía Municipal de Limón</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
@@ -1391,6 +1391,10 @@ tbody td{padding:8px 11px;}
       <button class="btn btn-warning" onclick="imprimirLlamados()">🖨️ Imprimir</button>
       <button class="btn btn-secondary" onclick="limpiarLlamados()">🗑️ Limpiar</button>
      </div>
+    <div class="card" style="margin-top:16px;">
+      <div class="card-header"><div class="card-titulo">📋 Llamados Registrados</div></div>
+      <div id="m3c-tabla-registros" style="padding:8px;"></div>
+    </div>
     </div>
     <div class="card"><div class="card-header"><div class="card-titulo">📊 Métricas</div></div><div id="metricas-guardas"><div class="alert alert-info">Las métricas se actualizan al guardar.</div></div></div>
    </div>
@@ -1946,7 +1950,11 @@ function leerAccionesPoliciales() {
 
   AP_CAMPOS.forEach(([apId, lbl]) => {
     const cb = document.getElementById('ap-cb-'+apId);
-    if (!cb || !cb.checked) { apPlano[apId]=0; return; }
+    if (!cb) { apPlano[apId]=0; return; }
+    const apBody = document.getElementById('ap-body-'+apId);
+    const activa = cb.checked || (apBody && apBody.style.display==='block');
+    if (!activa) { apPlano[apId]=0; return; }
+    if (!cb.checked) cb.checked = true;
 
     // Leer cantidad
     const cntEl = document.getElementById('ap-cnt-'+apId);
@@ -2311,6 +2319,53 @@ function imprimirM1(){
     <div style="text-align:center;margin-top:18px;font-size:9pt;color:#999;border-top:1px solid #ddd;padding-top:6px;">"Limón Ciudad de la Vida" · ${consec}</div>
   </div>`);
 }
+function editarM1(id){
+  const r=D.m1.find(x=>String(x.id)===String(id));
+  if(!r){toast('Reporte no encontrado','danger');return;}
+  const setV=(elId,val)=>{const e=document.getElementById(elId);if(e)e.value=val||'';};
+  setV('m1-fi',r.fi); setV('m1-ff',r.ff);
+  setV('m1-hi',r.hi); setV('m1-hf',r.hf);
+  setV('m1-movil',r.movil); setV('m1-placa',r.placa);
+  setV('m1-area',r.area); setV('m1-sup',r.sup);
+  // Cargar grupo
+  (r.grupo||[]).forEach(m=>{
+    const cb=document.getElementById('pol-cb-'+m.c);
+    if(cb)cb.checked=true;
+  });
+  // Cargar acciones desde r.acciones
+  let accData={};
+  if(r.acciones){
+    try{
+      const arr=typeof r.acciones==='string'?JSON.parse(r.acciones):r.acciones;
+      if(Array.isArray(arr)) arr.forEach(a=>{if(a.lbl)accData[a.lbl]=a;if(a.apId)accData[a.apId]=a;});
+      else if(typeof arr==='object') accData=arr;
+    }catch(e){}
+  }
+  setTimeout(()=>{
+    AP_CAMPOS.forEach(([apId,lbl])=>{
+      const v=parseInt(r.cuant?.[lbl])||parseInt(r[apId])||parseInt(accData[apId]?.cnt)||parseInt(accData[lbl]?.cnt)||0;
+      if(!v) return;
+      const cb=document.getElementById('ap-cb-'+apId);
+      const cnt=document.getElementById('ap-cnt-'+apId);
+      const body=document.getElementById('ap-body-'+apId);
+      if(cb) cb.checked=true;
+      if(cnt){cnt.value=v;cnt.textContent=v;}
+      if(body) body.style.display='block';
+    });
+    // Documentos
+    TIPOS_DOC.forEach(t=>{
+      const e=document.getElementById(t.id);
+      if(e)e.value=parseInt(r.docs?.[t.l])||parseInt(r[t.id])||0;
+    });
+  },200);
+  window._editandoM1=id;
+  // Navegar a M1 y activar tab nuevo
+  navTo('mod1');
+  const btn=document.querySelector('[onclick="guardarM1()"]');
+  if(btn){btn.textContent='💾 Actualizar Reporte';btn.style.background='var(--dorado)';}
+  toast('✏️ Reporte '+id+' cargado. Modifique y guarde.','warning');
+}
+
 function limpiarM1(){
   // Limpiar TODOS los inputs, selects y textareas del formulario M1
   const contenedor = document.getElementById('m1-nuevo');
@@ -2410,7 +2465,117 @@ function limpiarBitacora(){
 const INST_SECUESTROS=[{id:'oij',lbl:'OIJ — Organismo de Investigación Judicial'},{id:'transito',lbl:'Juzgado de Tránsito'},{id:'fiscal',lbl:'Fiscalía'},{id:'contra',lbl:'Juzgado Contravencional'},{id:'pcd',lbl:'Policía Control de Drogas (PCD)'},{id:'pml',lbl:'Policía Municipal (PML)'}];
 function initSecuestros(){INST_SECUESTROS.forEach(inst=>{const cont=document.getElementById('m3b-'+inst.id);if(!cont||cont.innerHTML.trim())return;const esPML=inst.id==='pml';cont.innerHTML=`<div class="form-grid form-grid-3" style="margin-bottom:14px;"><div class="form-field"><label>Operador Responsable</label><select id="sb-op-${inst.id}"><option value="">Seleccionar...</option>${OPERADORES.map(o=>`<option value="${o.n}">${o.ind} — ${o.n}</option>`).join('')}</select></div>${esPML?`<div class="form-field field-span-2"><label>Oficial PML</label><select id="sb-pml-of"><option value="">Seleccionar...</option>${POLICIAS.map(p=>`<option>${p.n}</option>`).join('')}</select></div>`:`<div class="form-field field-span-2"><label>Agente Responsable</label><input type="text" id="sb-ag-${inst.id}" placeholder="Nombre del agente"></div>`}<div class="form-field"><label>Cédula</label><input type="text" id="sb-ced-${inst.id}"></div><div class="form-field field-span-2"><label>N° Causa / Expediente</label><input type="text" id="sb-causa-${inst.id}" placeholder="Ej: 26-000165-0063-PE"></div><div class="form-field field-span-3"><label>Motivo del Caso</label><input type="text" id="sb-motivo-${inst.id}" placeholder="Descripción del motivo"></div><div class="form-field"><label>Fecha Inicio Video</label><input type="date" id="sb-fi-${inst.id}" value="${hoy()}"></div><div class="form-field"><label>Fecha Fin Video</label><input type="date" id="sb-ff-${inst.id}" value="${hoy()}"></div><div class="form-field"><label>Estado</label><select id="sb-est-${inst.id}"><option>Entregado</option><option>Pendiente</option></select></div></div><div class="btn-group" style="margin-bottom:16px;"><button class="btn btn-primary" onclick="guardarSecuestro('${inst.id}')">💾 Registrar</button></div><div class="tabla-wrapper"><table><thead><tr><th>Operador</th><th>Agente</th><th>N° Causa</th><th>F. Inicio</th><th>F. Fin</th><th>Estado</th><th></th></tr></thead><tbody id="sb-tbody-${inst.id}"></tbody></table></div>`;renderSecuestros(inst.id);});}
 
-function renderSecuestros(instId){const tbody=document.getElementById('sb-tbody-'+instId);if(!tbody)return;const regs=D.m3b.filter(r=>r.inst===instId);tbody.innerHTML=regs.map(r=>`<tr><td>${r.op?.split('—')[0]?.trim()||r.op}</td><td>${r.agente}</td><td style="font-size:11px;">${r.causa}</td><td>${r.fi}</td><td>${r.ff}</td><td><span class="badge ${r.estado==='Entregado'?'badge-verde':'badge-dorado'}">${r.estado}</span></td><td><button class="btn btn-danger btn-sm" onclick="eliminarSecuestro(${r.id},'${instId}')">🗑️</button></td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:#999;padding:12px;">Sin registros</td></tr>';}
+function renderSecuestros(instId){
+  const tbody=document.getElementById('sb-tbody-'+instId);
+  if(!tbody)return;
+  const regs=D.m3b.filter(r=>r.inst===instId);
+  if(!regs.length){
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:#999;padding:12px;">Sin registros para esta institución</td></tr>';
+    return;
+  }
+  tbody.innerHTML=regs.slice().reverse().map(r=>`<tr>
+    <td><span class="badge badge-azul" style="font-size:11px;">${r.id||'—'}</span></td>
+    <td style="font-size:12px;">${r.op?.split('—')[1]?.trim()||r.op||'—'}</td>
+    <td style="font-size:12px;">${r.agente||'—'}</td>
+    <td style="font-size:11px;">${r.causa||'—'}</td>
+    <td style="font-size:11px;">${r.fi||'—'}</td>
+    <td style="font-size:11px;">${r.ff||'—'}</td>
+    <td><span class="badge ${r.estado==='Entregado'?'badge-verde':'badge-dorado'}">${r.estado||'—'}</span></td>
+    <td style="white-space:nowrap;text-align:center;">
+      <button class="btn btn-secondary btn-sm" onclick="verSecuestro('${r.id}')" title="Ver">👁️</button>
+      <button class="btn btn-warning btn-sm" onclick="editarSecuestro('${r.id}','${instId}')" title="Editar">✏️</button>
+      <button class="btn btn-primary btn-sm" onclick="imprimirSecuestro('${r.id}')" title="Imprimir">🖨️</button>
+      <button class="btn btn-danger btn-sm" onclick="eliminarSecuestro('${r.id}','${instId}')" title="Eliminar">🗑️</button>
+    </td>
+  </tr>`).join('');
+}
+function editarSecuestro(id, instId){
+  const r=D.m3b.find(x=>String(x.id)===String(id));
+  if(!r){toast('Registro no encontrado','danger');return;}
+  if(!instId) instId=r.inst;
+  const setV=(elId,val)=>{const e=document.getElementById(elId);if(e)e.value=val||'';};
+  setV('sb-op-'+instId, r.op);
+  if(instId==='pml'){
+    setV('sb-pml-of', r.agente);
+  } else {
+    setV('sb-ag-'+instId, r.agente);
+  }
+  setV('sb-ced-'+instId, r.ced);
+  setV('sb-causa-'+instId, r.causa);
+  setV('sb-motivo-'+instId, r.motivo);
+  setV('sb-fi-'+instId, r.fi);
+  setV('sb-ff-'+instId, r.ff);
+  setV('sb-est-'+instId, r.estado||'Pendiente');
+  window['_editandoSecuestro_'+instId]=id;
+  const btn=document.querySelector(`[onclick="guardarSecuestro('${instId}')"]`);
+  if(btn){btn.textContent='💾 Actualizar';btn.style.background='var(--dorado)';}
+  const op=document.getElementById('sb-op-'+instId);
+  if(op)op.scrollIntoView({behavior:'smooth',block:'start'});
+  toast('✏️ Secuestro '+id+' cargado. Modifique y guarde.','warning');
+}
+
+function imprimirSecuestro(id){
+  const r=D.m3b.find(x=>String(x.id)===String(id));
+  if(!r){toast('Registro no encontrado','danger');return;}
+  const INST_LABELS={'oij':'OIJ — Organismo de Investigación Judicial','transito':'Juzgado de Tránsito',
+    'fiscal':'Fiscalía','contra':'Juzgado Contravencional','pcd':'Policía Control de Drogas (PCD)','pml':'Policía Municipal (PML)'};
+  print2(`<div style="max-width:100%;font-family:Arial,sans-serif;font-size:11pt;">
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a3a5c;padding-bottom:10px;margin-bottom:14px;">
+      <img src="${I_MUNI}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
+      <div style="text-align:center;flex:1;">
+        <div style="font-weight:700;font-size:13pt;color:#1a3a5c;">MUNICIPALIDAD DEL CANTÓN CENTRAL DE LIMÓN</div>
+        <div>Centro de Video Protección — DSE</div>
+        <div style="font-weight:700;font-size:12pt;margin-top:4px;">SECUESTRO DE IMAGEN DE VIDEO</div>
+        <div style="font-size:10pt;color:#555;">${r.id||''} — ${INST_LABELS[r.inst]||r.inst||''}</div>
+      </div>
+      <img src="${I_DSE}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:12px;">
+      <tr>
+        <td style="padding:5px 8px;border:1px solid #ddd;width:50%;"><strong>Operador:</strong> ${r.op||''}</td>
+        <td style="padding:5px 8px;border:1px solid #ddd;"><strong>Agente Responsable:</strong> ${r.agente||''}</td>
+      </tr>
+      <tr>
+        <td style="padding:5px 8px;border:1px solid #ddd;"><strong>Cédula:</strong> ${r.ced||''}</td>
+        <td style="padding:5px 8px;border:1px solid #ddd;"><strong>N° Causa:</strong> ${r.causa||''}</td>
+      </tr>
+      <tr>
+        <td style="padding:5px 8px;border:1px solid #ddd;"><strong>F. Inicio:</strong> ${r.fi||''}</td>
+        <td style="padding:5px 8px;border:1px solid #ddd;"><strong>F. Fin:</strong> ${r.ff||''}</td>
+      </tr>
+      <tr>
+        <td colspan="2" style="padding:5px 8px;border:1px solid #ddd;"><strong>Estado:</strong>
+          <span style="color:${r.estado==='Entregado'?'#1e5c2e':'#c9942a'};font-weight:700;">${r.estado||''}</span>
+        </td>
+      </tr>
+    </table>
+    <h4 style="color:#1a3a5c;margin:10px 0 6px;">MOTIVO DEL CASO</h4>
+    <div style="padding:8px;border:1px solid #ddd;border-radius:4px;text-align:justify;min-height:60px;">${r.motivo||'—'}</div>
+    <div style="text-align:center;margin-top:30px;font-size:9pt;color:#999;border-top:1px solid #ddd;padding-top:6px;">"Limón Ciudad de la Vida" · ${r.id||''}</div>
+  </div>`);
+}
+
+function verSecuestro(id){
+  const r=D.m3b.find(x=>String(x.id)===String(id));
+  if(!r){toast('Registro no encontrado','danger');return;}
+  const INST_LABELS={'oij':'OIJ','transito':'J. Tránsito','fiscal':'Fiscalía','contra':'J. Contravencional','pcd':'PCD','pml':'PML'};
+  const cont=document.getElementById('modal-confirm-msg');
+  const modal=document.getElementById('modal-confirm');
+  if(cont&&modal){
+    cont.innerHTML=`<div style="font-size:13px;">
+      <h4 style="color:#1a3a5c;">${r.id} — ${INST_LABELS[r.inst]||r.inst}</h4>
+      <p><strong>Operador:</strong> ${r.op||''}</p>
+      <p><strong>Agente:</strong> ${r.agente||''} | <strong>Cédula:</strong> ${r.ced||''}</p>
+      <p><strong>N° Causa:</strong> ${r.causa||''}</p>
+      <p><strong>Período:</strong> ${r.fi||''} al ${r.ff||''}</p>
+      <p><strong>Estado:</strong> <span style="color:${r.estado==='Entregado'?'#1e5c2e':'#c9942a'};font-weight:700;">${r.estado||''}</span></p>
+      <p><strong>Motivo:</strong> ${r.motivo||'—'}</p>
+    </div>`;
+    modal.classList.add('open');
+    document.body.classList.add('modal-open');
+  }
+}
+
 
 
 // M3C LLAMADOS
@@ -2429,6 +2594,142 @@ function limpiarLlamados(){
   const met=document.getElementById('metricas-guardas');
   if(met)met.innerHTML='<div class="alert alert-info">Las métricas se actualizan al guardar el registro.</div>';
 }
+function renderTablaM3C(){
+  const cont=document.getElementById('m3c-tabla-registros');
+  if(!cont)return;
+  if(!D.m3c||!D.m3c.length){
+    cont.innerHTML='<p style="color:#999;text-align:center;padding:12px;">Sin llamados registrados.</p>';
+    return;
+  }
+  const MAPA_T={'t1':'06:00-14:00','t2':'14:00-22:00','t3':'22:00-06:00'};
+  cont.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:12px;">
+    <thead><tr style="background:#1a3a5c;color:white;">
+      <th style="padding:6px 8px;">N°</th>
+      <th style="padding:6px 8px;">F. Inicio</th>
+      <th style="padding:6px 8px;">F. Fin</th>
+      <th style="padding:6px 8px;">Turno</th>
+      <th style="padding:6px 8px;">Operador</th>
+      <th style="padding:6px 8px;text-align:center;">Acciones</th>
+    </tr></thead>
+    <tbody>${D.m3c.slice().reverse().map(r=>`<tr>
+      <td style="padding:5px 8px;"><span class="badge badge-azul" style="font-size:11px;">${r.id||'—'}</span></td>
+      <td style="padding:5px 8px;">${r.fi||'—'}</td>
+      <td style="padding:5px 8px;">${r.ff||'—'}</td>
+      <td style="padding:5px 8px;">${MAPA_T[r.turno]||r.turno||'—'}</td>
+      <td style="padding:5px 8px;">${r.op?.split('—')[1]?.trim()||r.op||'—'}</td>
+      <td style="padding:5px 8px;text-align:center;white-space:nowrap;">
+        <button class="btn btn-secondary btn-sm" onclick="verLlamado('${r.id}')" title="Ver">👁️</button>
+        <button class="btn btn-warning btn-sm" onclick="editarLlamado('${r.id}')" title="Editar">✏️</button>
+        <button class="btn btn-primary btn-sm" onclick="imprimirLlamado('${r.id}')" title="Imprimir">🖨️</button>
+        <button class="btn btn-danger btn-sm" onclick="eliminarLlamado('${r.id}')" title="Eliminar">🗑️</button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function verLlamado(id){
+  const r=D.m3c.find(x=>String(x.id)===String(id));
+  if(!r){toast('Registro no encontrado','danger');return;}
+  const MAPA_T={'t1':'06:00-14:00','t2':'14:00-22:00','t3':'22:00-06:00'};
+  const rows=Array.isArray(r.rows)?r.rows:(typeof r.rows==='string'?JSON.parse(r.rows||'[]'):[]);
+  const cont=document.getElementById('modal-confirm-msg');
+  const modal=document.getElementById('modal-confirm');
+  if(cont&&modal){
+    cont.innerHTML=`<div style="max-height:60vh;overflow-y:auto;font-size:12px;">
+      <h4 style="color:#1a3a5c;">${r.id} — ${MAPA_T[r.turno]||r.turno}</h4>
+      <p><strong>Período:</strong> ${r.fi||''} al ${r.ff||''}</p>
+      <p><strong>Operador:</strong> ${r.op||''}</p>
+      <table style="width:100%;border-collapse:collapse;margin-top:8px;">
+        <thead><tr style="background:#1a3a5c;color:white;">
+          <th style="padding:4px 6px;">Puesto</th>
+          <th style="padding:4px 6px;">Guarda</th>
+        </tr></thead>
+        <tbody>${rows.map((row,i)=>`<tr style="background:${i%2?'#f5f5f5':'white'}">
+          <td style="padding:4px 6px;border:1px solid #eee;">${row.puesto||''}</td>
+          <td style="padding:4px 6px;border:1px solid #eee;">${row.guarda||'— Sin asignar —'}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+    modal.classList.add('open');
+    document.body.classList.add('modal-open');
+  }
+}
+
+function editarLlamado(id){
+  const r=D.m3c.find(x=>String(x.id)===String(id));
+  if(!r){toast('Registro no encontrado','danger');return;}
+  const setV=(elId,val)=>{const e=document.getElementById(elId);if(e)e.value=val||'';};
+  setV('m3c-fi',r.fi); setV('m3c-ff',r.ff);
+  setV('m3c-turno',r.turno); setV('m3c-op',r.op);
+  const rows=Array.isArray(r.rows)?r.rows:(typeof r.rows==='string'?JSON.parse(r.rows||'[]'):[]);
+  rows.forEach(row=>{
+    const puesto=PUESTOS_BRAVO.find(p=>p.lbl===row.puesto);
+    if(puesto){const sel=document.getElementById('g-'+puesto.id);if(sel)sel.value=row.guarda||'';}
+  });
+  window._editandoLlamado=id;
+  const btn=document.querySelector('[onclick="guardarLlamados()"]');
+  if(btn){btn.textContent='💾 Actualizar Llamado';btn.style.background='var(--dorado)';}
+  const cont=document.getElementById('wf-mod3-llamados');
+  if(cont)cont.scrollIntoView({behavior:'smooth',block:'start'});
+  toast('✏️ Llamado '+id+' cargado.','warning');
+}
+
+function imprimirLlamado(id){
+  const r=D.m3c.find(x=>String(x.id)===String(id));
+  if(!r){toast('Registro no encontrado','danger');return;}
+  const MAPA_T={'t1':'06:00 a 14:00 horas','t2':'14:00 a 22:00 horas','t3':'22:00 a 06:00 horas'};
+  const rows=Array.isArray(r.rows)?r.rows:(typeof r.rows==='string'?JSON.parse(r.rows||'[]'):[]);
+  const activos=rows.filter(x=>x.guarda&&x.guarda!=='').length;
+  print2(`<div style="max-width:100%;font-family:Arial,sans-serif;font-size:11pt;">
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1a3a5c;padding-bottom:10px;margin-bottom:14px;">
+      <img src="${I_DSE}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
+      <div style="text-align:center;flex:1;">
+        <div style="font-weight:700;font-size:13pt;color:#1a3a5c;">MUNICIPALIDAD DEL CANTÓN CENTRAL DE LIMÓN</div>
+        <div>Centro de Video Protección — DSE</div>
+        <div style="font-weight:700;font-size:12pt;margin-top:4px;">LLAMADOS RADIALES A GUARDAS</div>
+        <div style="font-size:10pt;color:#555;">${r.id||''}</div>
+      </div>
+      <img src="${I_MUNI}" style="height:65px;object-fit:contain;mix-blend-mode:multiply;">
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:12px;">
+      <tr>
+        <td style="padding:4px 8px;border:1px solid #ddd;"><strong>F. Inicio:</strong> ${r.fi||''}</td>
+        <td style="padding:4px 8px;border:1px solid #ddd;"><strong>F. Fin:</strong> ${r.ff||''}</td>
+        <td style="padding:4px 8px;border:1px solid #ddd;"><strong>Turno:</strong> ${MAPA_T[r.turno]||r.turno||''}</td>
+        <td style="padding:4px 8px;border:1px solid #ddd;"><strong>Operador:</strong> ${r.op||''}</td>
+      </tr>
+      <tr>
+        <td colspan="2" style="padding:4px 8px;border:1px solid #ddd;"><strong>Puestos activos:</strong> ${activos}</td>
+        <td colspan="2" style="padding:4px 8px;border:1px solid #ddd;"><strong>Total puestos:</strong> ${rows.length}</td>
+      </tr>
+    </table>
+    <table style="width:100%;border-collapse:collapse;font-size:10pt;">
+      <thead><tr style="background:#1a3a5c;color:white;">
+        <th style="padding:5px 8px;text-align:left;">Puesto</th>
+        <th style="padding:5px 8px;text-align:left;">Guarda Asignado</th>
+        <th style="padding:5px 8px;text-align:center;">Estado</th>
+      </tr></thead>
+      <tbody>${rows.map((row,i)=>`<tr style="background:${i%2?'#f5f5f5':'white'}">
+        <td style="padding:5px 8px;border:1px solid #ddd;">${row.puesto||''}</td>
+        <td style="padding:5px 8px;border:1px solid #ddd;">${row.guarda||'— Vacante —'}</td>
+        <td style="padding:5px 8px;border:1px solid #ddd;text-align:center;">${row.guarda?'<span style="color:#1e5c2e;">✓ Asignado</span>':'<span style="color:#c0392b;">Vacante</span>'}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+    <div style="text-align:center;margin-top:18px;font-size:9pt;color:#999;border-top:1px solid #ddd;padding-top:6px;">"Limón Ciudad de la Vida" · ${r.id||''}</div>
+  </div>`);
+}
+
+async function eliminarLlamado(id){
+  if(!confirm('¿Eliminar este llamado? Esta acción no se puede deshacer.')) return;
+  try{
+    const res=await gasPost({mod:'m3c',action:'eliminar',id});
+    if(res&&res.error) throw new Error(res.error);
+    D.m3c=D.m3c.filter(x=>String(x.id)!==String(id));
+    renderTablaM3C();
+    toast('Llamado eliminado','warning');
+  }catch(e){toast('❌ '+e.message,'danger');}
+}
+
 function renderMetricas(){const cont=document.getElementById('metricas-guardas');if(!cont)return;const rows=[];document.querySelectorAll('#tbody-guardas tr').forEach(tr=>{const g=tr.querySelector('select')?.value||'';rows.push(g);});const activos=rows.filter(g=>g&&!g.includes('x7')).length;const vacantes=rows.filter(g=>g.includes('x7')||!g).length;const oficiales=new Set(rows.filter(g=>g&&!g.includes('x7'))).size;cont.innerHTML=`<div class="stats-grid"><div class="stat-card verde"><div class="stat-valor">${activos}</div><div class="stat-label">Puestos Activos</div></div><div class="stat-card rojo"><div class="stat-valor">${vacantes}</div><div class="stat-label">Puestos sin Oficial</div></div><div class="stat-card azul"><div class="stat-valor">${oficiales}</div><div class="stat-label">Oficiales Laborando</div></div></div>`;}
 
 
@@ -2487,7 +2788,7 @@ function previsualizarInforme(){const oficio=document.getElementById('m6-oficio'
     <strong style="font-size:13px;">Lic. Jeison Arce Campos</strong><br>
     <span style="color:#666;font-size:11px;">Gestor de Seguridad Ciudadana y Vial<br>Municipalidad del Cantón Central de Limón</span>
   </div>
-</div><div style="text-align:center;margin-top:14px;font-size:11px;color:#999;">"Limón Ciudad de la Vida"</div></div>`;}
+</div><div style="text-align:center;margin-top:14px;font-size:11px;color:#999;">"Limón Ciudad de la Vida"</div></div>`; setTimeout(()=>renderM6Charts(),200);}
 function generarConclusionRobusta(desde,hasta){const parrafos=[];if(!D.m1.length&&!D.m2.length&&!D.m3a.length&&!D.m4.length&&!D.m7.length)return'<p style="color:#999;">No hay datos registrados. Complete los registros antes de generar la conclusión.</p>';if(D.m1.length||D.m2.length){const tDet=D.m1.reduce((s,r)=>s+(r.cuant?.['Personas Detenidas']||0),0);const tAbord=D.m1.reduce((s,r)=>s+(r.cuant?.['Personas Abordadas']||0),0);parrafos.push(`<p style="margin-bottom:10px;">La Policía Municipal de Limón evidenció una presencia operativa constante con <strong>${D.m1.length}</strong> reportes diarios y <strong>${D.m2.length}</strong> partes policiales. ${tAbord>0?`Se abordaron <strong>${fmt(tAbord)}</strong> personas en labores de control de campo.`:''}${tDet>0?` Se ejecutaron <strong>${tDet}</strong> detenciones, reflejando la gestión activa en el mantenimiento del orden público.`:''}</p>`);}if(D.m3a.length){const tIncs=D.m3a.reduce((s,r)=>s+(r.incidentes?.length||0),0);parrafos.push(`<p style="margin-bottom:10px;">El Centro de Video Protección operó de forma ininterrumpida, registrando <strong>${D.m3a.length}</strong> bitácoras con <strong>${tIncs}</strong> incidentes documentados y tramitando <strong>${D.m3b.length}</strong> solicitudes de secuestro de video.</p>`);}if(D.m4.length){const tEst=D.m4.reduce((s,r)=>s+r.est,0);parrafos.push(`<p style="margin-bottom:10px;">La Unidad de Programas Preventivos realizó <strong>${D.m4.length}</strong> visitas capacitando a <strong>${fmt(tEst)}</strong> estudiantes, consolidando el compromiso institucional con la prevención desde los centros educativos.</p>`);}if(D.m7.length){const tInf=D.m7.reduce((s,r)=>s+r.inf,0);const tMonto=D.m7.reduce((s,r)=>s+r.monto,0);parrafos.push(`<p style="margin-bottom:10px;">El Departamento de Estacionómetros registró <strong>${fmt(tInf)}</strong> infracciones generando <strong>₡${fmt(tMonto)}</strong> en ingresos municipales.</p>`);}parrafos.push(`<p>Los resultados del período <strong>${desde}</strong> al <strong>${hasta}</strong> demuestran el compromiso de la Gestión de Seguridad Ciudadana y Vial con el fortalecimiento de la seguridad y convivencia ciudadana en el Cantón Central de Limón. Los datos consignados en este informe constituyen evidencia objetiva del desempeño institucional de cada uno de sus departamentos.</p>`);return parrafos.join('');}
 function imprimirInforme(){previsualizarInforme();setTimeout(()=>{print2(document.getElementById('m6-preview').innerHTML);},400);}
 function exportarWord(){previsualizarInforme();setTimeout(()=>{const content=document.getElementById('m6-preview').innerHTML;const html=`<html xmlns:o='urn:schemas-microsoft-com:office:office'><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;font-size:12pt;}p{text-align:justify;line-height:1.6;}
@@ -2566,7 +2867,12 @@ function eliminarTodo(){pendingDel={tipo:'todo'};document.getElementById('modal-
 
 // RENDER TABLAS
 function renderAll(){['m1','m2','m3a','m4','m7'].forEach(m=>renderTabla(m));INST_SECUESTROS.forEach(i=>renderSecuestros(i.id));}
-function renderTabla(mod){const tM={manana:'06:00-14:00',tarde:'14:00-22:00',noche:'22:00-06:00'};if(mod==='m1'){const tbody=document.getElementById('tbody-m1');if(!tbody)return;tbody.innerHTML=D.m1.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.fi||''}</td><td>${r.ff||''}</td><td style="font-size:12px;">${(r.grupo||[]).slice(0,2).map(g=>g.n?.split(' ')[0]).join(', ')}${(r.grupo||[]).length>2?`+${(r.grupo||[]).length-2}`:''}</td><td>${r.movil||'—'}</td><td><span class="badge badge-verde">OK</span></td></tr>`).join('')||noData(6);}if(mod==='m2'){renderTablaM2ConAcceso();return;}if(mod==='m3a'){const tbody=document.getElementById('tbody-m3a');if(!tbody)return;tbody.innerHTML=D.m3a.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.fi||''}</td><td>${r.ff||''}</td><td>${tM[r.turno]||r.turno}</td><td style="font-size:12px;">${r.op?.split('—')[1]?.trim()||r.op}</td><td><span class="badge badge-dorado">${r.incidentes?.length||0}</span></td><td><span class="badge badge-verde">OK</span></td></tr>`).join('')||noData(7);}if(mod==='m4'){const tbody=document.getElementById('tbody-m4');if(!tbody)return;tbody.innerHTML=D.m4.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.fecha}</td><td style="font-size:12px;">${r.oficial?.split(' ')[0]}</td><td>${r.centro}</td><td><span class="badge badge-verde">${r.prog}</span></td><td>${r.nivel}</td><td style="text-align:center;font-weight:700;">${r.est}</td><td>${r.cierre==='si'?'<span class="badge badge-dorado">⭐</span>':'—'}</td><td><button class="btn btn-warning btn-sm" onclick="editarM4('${r.id}')">✏️</button></td></tr>`).join('')||noData(9);}if(mod==='m7'){const tbody=document.getElementById('tbody-m7');if(!tbody)return;tbody.innerHTML=D.m7.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.mesNom} ${r.anio}</td><td style="text-align:right;font-weight:700;">${fmt(r.inf)}</td><td style="text-align:right;">₡${fmt(r.monto)}</td><td style="text-align:center;">${r.napel}</td><td><button class="btn btn-warning btn-sm" onclick="imprimirM7()">🖨️</button></td></tr>`).join('')||noData(6);}if(mod==='aud'){const tbody=document.getElementById('tbody-aud');if(!tbody)return;tbody.innerHTML=D.aud.slice().reverse().slice(0,50).map(a=>`<tr><td style="font-size:11px;">${a.ts}</td><td>${a.u}</td><td>${a.accion}</td><td>${a.modulo}</td><td style="font-size:12px;">${a.detalle}</td></tr>`).join('')||noData(5);}}
+function renderTabla(mod){const tM={manana:'06:00-14:00',tarde:'14:00-22:00',noche:'22:00-06:00'};if(mod==='m1'){const tbody=document.getElementById('tbody-m1');if(!tbody)return;tbody.innerHTML=D.m1.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.fi||''}</td><td>${r.ff||''}</td><td style="font-size:12px;">${(r.grupo||[]).slice(0,2).map(g=>g.n?.split(' ')[0]).join(', ')}${(r.grupo||[]).length>2?`+${(r.grupo||[]).length-2}`:''}</td><td>${r.movil||'—'}</td><td style="white-space:nowrap;">
+        <button class="btn btn-secondary btn-sm" onclick="verRDL('${r.id}')" title="Ver">👁️</button>
+        ${UA.rol==='admin'||r.u===UA.usuario?`<button class="btn btn-warning btn-sm" onclick="editarM1('${r.id}')" title="Editar">✏️</button>`:''}
+        <button class="btn btn-primary btn-sm" onclick="imprimirM1('${r.id}')" title="Imprimir">🖨️</button>
+        ${UA.rol==='admin'?`<button class="btn btn-danger btn-sm" onclick="eliminarM1('${r.id}')" title="Eliminar">🗑️</button>`:''}
+      </td></tr>`).join('')||noData(6);}if(mod==='m2'){renderTablaM2ConAcceso();return;}if(mod==='m3a'){const tbody=document.getElementById('tbody-m3a');if(!tbody)return;tbody.innerHTML=D.m3a.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.fi||''}</td><td>${r.ff||''}</td><td>${tM[r.turno]||r.turno}</td><td style="font-size:12px;">${r.op?.split('—')[1]?.trim()||r.op}</td><td><span class="badge badge-dorado">${r.incidentes?.length||0}</span></td><td><span class="badge badge-verde">OK</span></td></tr>`).join('')||noData(7);}if(mod==='m4'){const tbody=document.getElementById('tbody-m4');if(!tbody)return;tbody.innerHTML=D.m4.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.fecha}</td><td style="font-size:12px;">${r.oficial?.split(' ')[0]}</td><td>${r.centro}</td><td><span class="badge badge-verde">${r.prog}</span></td><td>${r.nivel}</td><td style="text-align:center;font-weight:700;">${r.est}</td><td>${r.cierre==='si'?'<span class="badge badge-dorado">⭐</span>':'—'}</td><td><button class="btn btn-warning btn-sm" onclick="editarM4('${r.id}')">✏️</button></td></tr>`).join('')||noData(9);}if(mod==='m7'){const tbody=document.getElementById('tbody-m7');if(!tbody)return;tbody.innerHTML=D.m7.slice().reverse().map(r=>`<tr><td><span class="badge badge-azul">${r.id}</span></td><td>${r.mesNom} ${r.anio}</td><td style="text-align:right;font-weight:700;">${fmt(r.inf)}</td><td style="text-align:right;">₡${fmt(r.monto)}</td><td style="text-align:center;">${r.napel}</td><td><button class="btn btn-warning btn-sm" onclick="imprimirM7()">🖨️</button></td></tr>`).join('')||noData(6);}if(mod==='aud'){const tbody=document.getElementById('tbody-aud');if(!tbody)return;tbody.innerHTML=D.aud.slice().reverse().slice(0,50).map(a=>`<tr><td style="font-size:11px;">${a.ts}</td><td>${a.u}</td><td>${a.accion}</td><td>${a.modulo}</td><td style="font-size:12px;">${a.detalle}</td></tr>`).join('')||noData(5);}}
 
 
 
@@ -2905,10 +3211,22 @@ function renderStatsM2(){
   const filtOficial=document.getElementById('m2-stats-oficial')?.value||'';
   const filtDir=document.getElementById('m2-stats-dir')?.value||'';
   // Poblar select de oficiales si está vacío
+  // Poblar selects con valores reales de D.m2
   const selOf=document.getElementById('m2-stats-oficial');
-  if(selOf&&selOf.options.length<=1){
-    const oficiales=[...new Set(D.m2.map(r=>r.oficial).filter(Boolean))];
-    oficiales.forEach(o=>{const opt=document.createElement('option');opt.value=o;opt.textContent=o;selOf.appendChild(opt);});
+  if(selOf){
+    const valOf=selOf.value;
+    selOf.innerHTML='<option value="">Todos</option>';
+    [...new Set(D.m2.map(r=>r.oficial).filter(Boolean))].sort()
+      .forEach(o=>{const opt=document.createElement('option');opt.value=o;opt.textContent=o;selOf.appendChild(opt);});
+    if(valOf)selOf.value=valOf;
+  }
+  const selDir=document.getElementById('m2-stats-dir');
+  if(selDir){
+    const valDir=selDir.value;
+    selDir.innerHTML='<option value="">Todos</option>';
+    [...new Set(D.m2.map(r=>r.dirigido).filter(Boolean))].sort()
+      .forEach(d=>{const opt=document.createElement('option');opt.value=d;opt.textContent=d;selDir.appendChild(opt);});
+    if(valDir)selDir.value=valDir;
   }
   // Filtrar registros
   let datos=D.m2.filter(r=>{
@@ -3511,19 +3829,38 @@ async function guardarM1() {
   };
 
   try {
-    const res=await gasPost(payload);
-    const r_local={...payload, id:res.id};
-    r_local.cuant={};
-    r_local.docs={};
-    TIPOS_DOC.forEach(t=>{ r_local.docs[t.l]=docsPlano[t.id]||0; });
-    AP_CAMPOS.forEach(([apId,lbl])=>{ r_local.cuant[lbl]=apPlano[apId]||0; });
-    ['grupo','acciones','decomisos'].forEach(k=>{
-      if(typeof r_local[k]==='string'){try{r_local[k]=JSON.parse(r_local[k]);}catch(e){r_local[k]=[];}}
-    });
-    D.m1.unshift(r_local);
-    if(res.consec){const el=document.getElementById('c-m1');if(el)el.textContent=res.consec;}
-    renderTabla('m1'); toast('✅ Reporte guardado: '+res.id);
-    limpiarM1();
+    const esEdicion=!!window._editandoM1;
+    if(esEdicion){
+      const editId=window._editandoM1;
+      await gasPost({...payload,mod:'m1',action:'editar',id:editId});
+      const i=D.m1.findIndex(x=>String(x.id)===String(editId));
+      if(i>=0){
+        D.m1[i]={...D.m1[i],...payload,id:editId};
+        D.m1[i].cuant={}; D.m1[i].docs={};
+        TIPOS_DOC.forEach(t=>{ D.m1[i].docs[t.l]=docsPlano[t.id]||0; });
+        AP_CAMPOS.forEach(([apId,lbl])=>{ D.m1[i].cuant[lbl]=apPlano[apId]||0; });
+        D.m1[i].acciones=apData;
+      }
+      window._editandoM1=null;
+      const btn=document.querySelector('[onclick="guardarM1()"]');
+      if(btn){btn.textContent='💾 Guardar';btn.style.background='';}
+      renderTabla('m1'); toast('✅ Reporte actualizado');
+      limpiarM1();
+    } else {
+      const res=await gasPost(payload);
+      const r_local={...payload, id:res.id};
+      r_local.cuant={}; r_local.docs={};
+      TIPOS_DOC.forEach(t=>{ r_local.docs[t.l]=docsPlano[t.id]||0; });
+      AP_CAMPOS.forEach(([apId,lbl])=>{ r_local.cuant[lbl]=apPlano[apId]||0; });
+      r_local.acciones=apData;
+      ['grupo','acciones','decomisos'].forEach(k=>{
+        if(typeof r_local[k]==='string'){try{r_local[k]=JSON.parse(r_local[k]);}catch(e){r_local[k]=[];}}
+      });
+      D.m1.unshift(r_local);
+      if(res.consec){const el=document.getElementById('c-m1');if(el)el.textContent=res.consec;}
+      renderTabla('m1'); toast('✅ Reporte guardado: '+res.id);
+      limpiarM1();
+    }
   } catch(e){toast('❌ '+e.message,'danger');}
 }
 
@@ -3537,7 +3874,8 @@ async function guardarM2() {
   const payload={fecha:document.getElementById('m2-fecha').value,dirigido:document.getElementById('m2-dir').value,canton:document.getElementById('m2-canton').value,distrito:document.getElementById('m2-distrito').value,barrio:document.getElementById('m2-barrio').value,tipoLugar:document.getElementById('m2-lugar').value,dirExacta:document.getElementById('m2-dir-exacta').value,hora:document.getElementById('m2-hora').value,hechos:document.getElementById('m2-hechos').value,diligencias:document.getElementById('m2-dilig').value,oficial:document.getElementById('m2-act').value,cedulaOficial:document.getElementById('m2-act-ced').value,imputados,ofendidos,asistentes,docs,u:UA.nombre};
   try {
     if(esEdicion){
-      await gasPost({...payload,mod:'m2',action:'editar',id:window._editandoParte});
+      const resEdit=await gasPost({...payload,mod:'m2',action:'editar',id:window._editandoParte});
+      if(resEdit&&resEdit.error) throw new Error('Error al actualizar: '+resEdit.error);
       const idx=D.m2.findIndex(x=>x.id===window._editandoParte);
       if(idx>=0)D.m2[idx]={...D.m2[idx],...payload};
       window._editandoParte=null;
@@ -3570,11 +3908,33 @@ async function guardarBitacora() {
 // ── GUARDAR SECUESTRO ─────────────────────────────────────────
 async function guardarSecuestro(instId) {
   const esPML=instId==='pml';
-  const payload={mod:'m3b',action:'crear',inst:instId,op:document.getElementById('sb-op-'+instId)?.value||'',agente:esPML?document.getElementById('sb-pml-of')?.value||'':document.getElementById('sb-ag-'+instId)?.value||'',ced:document.getElementById('sb-ced-'+instId)?.value||'',causa:document.getElementById('sb-causa-'+instId)?.value||'',motivo:document.getElementById('sb-motivo-'+instId)?.value||'',fi:document.getElementById('sb-fi-'+instId)?.value||'',ff:document.getElementById('sb-ff-'+instId)?.value||'',estado:document.getElementById('sb-est-'+instId)?.value||'Pendiente',consecInt:esPML?document.getElementById('sb-consec-pml')?.value||'':'',u:UA.nombre};
+  const esEditSec=!!window['_editandoSecuestro_'+instId];
+  const payload={inst:instId,op:document.getElementById('sb-op-'+instId)?.value||'',
+    agente:esPML?document.getElementById('sb-pml-of')?.value||'':document.getElementById('sb-ag-'+instId)?.value||'',
+    ced:document.getElementById('sb-ced-'+instId)?.value||'',
+    causa:document.getElementById('sb-causa-'+instId)?.value||'',
+    motivo:document.getElementById('sb-motivo-'+instId)?.value||'',
+    fi:document.getElementById('sb-fi-'+instId)?.value||'',
+    ff:document.getElementById('sb-ff-'+instId)?.value||'',
+    estado:document.getElementById('sb-est-'+instId)?.value||'Pendiente',
+    u:UA.nombre};
   try {
-    const res=await gasPost(payload);
-    D.m3b.push({...payload,id:res.id||Date.now()});
-    renderSecuestros(instId); toast('✅ Secuestro registrado');
+    if(esEditSec){
+      const editId=window['_editandoSecuestro_'+instId];
+      const resEdit=await gasPost({mod:'m3b',action:'editar',id:editId,...payload});
+      if(resEdit&&resEdit.error) throw new Error(resEdit.error);
+      const i=D.m3b.findIndex(x=>String(x.id)===String(editId));
+      if(i>=0) D.m3b[i]={...D.m3b[i],...payload,id:editId};
+      window['_editandoSecuestro_'+instId]=null;
+      const btnSec=document.querySelector(`[onclick="guardarSecuestro('${instId}')"]`);
+      if(btnSec){btnSec.textContent='💾 Registrar';btnSec.style.background='';}
+      renderSecuestros(instId); toast('✅ Secuestro actualizado');
+    } else {
+      const res=await gasPost({mod:'m3b',action:'crear',...payload});
+      D.m3b.push({...payload,id:res.id||Date.now()});
+      renderSecuestros(instId); toast('✅ Secuestro registrado');
+    }
+    limpiarSecuestro(instId);
   } catch(e){toast('❌ '+e.message,'danger');}
 }
 
@@ -3591,10 +3951,30 @@ async function eliminarSecuestro(id,instId) {
 async function guardarLlamados() {
   const rows=[];
   PUESTOS_BRAVO.forEach(p=>{const g=document.getElementById('g-'+p.id)?.value||'';rows.push({puesto:p.lbl,guarda:g});});
-  const payload={mod:'m3c',action:'crear',fi:document.getElementById('m3c-fi').value,ff:document.getElementById('m3c-ff').value,turno:document.getElementById('m3c-turno').value,op:document.getElementById('m3c-op').value,rows,u:UA.nombre};
+  const fi=document.getElementById('m3c-fi').value;
+  const ff=document.getElementById('m3c-ff').value;
+  const turno=document.getElementById('m3c-turno').value;
+  const op=document.getElementById('m3c-op').value;
+  const esEditLl=!!window._editandoLlamado;
   try {
-    await gasPost(payload);
-    D.m3c.push(payload); renderMetricas(); toast('✅ Registro guardado');
+    if(esEditLl){
+      const editId=window._editandoLlamado;
+      const resE=await gasPost({mod:'m3c',action:'editar',id:editId,fi,ff,turno,op,rows,u:UA.nombre});
+      if(resE&&resE.error) throw new Error(resE.error);
+      const i=D.m3c.findIndex(x=>String(x.id)===String(editId));
+      if(i>=0) D.m3c[i]={...D.m3c[i],fi,ff,turno,op,rows};
+      window._editandoLlamado=null;
+      const btnLl=document.querySelector('[onclick="guardarLlamados()"]');
+      if(btnLl){btnLl.textContent='💾 Guardar';btnLl.style.background='';}
+      renderTablaM3C(); renderMetricas(); toast('✅ Llamado actualizado');
+      limpiarLlamados();
+    } else {
+      const res=await gasPost({mod:'m3c',action:'crear',fi,ff,turno,op,rows,u:UA.nombre});
+      if(res&&res.error) throw new Error(res.error);
+      D.m3c.push({id:res.id,fi,ff,turno,op,rows});
+      renderTablaM3C(); renderMetricas(); toast('✅ Llamado registrado: '+res.id);
+      limpiarLlamados();
+    }
   } catch(e){toast('❌ '+e.message,'danger');}
 }
 
@@ -3731,6 +4111,44 @@ async function guardarCfg() {
 }
 
 function save(){}
+
+
+// ── M6 GRÁFICOS ────────────────────────────────────────────
+function renderM6Charts(){
+  const cvM1=document.getElementById('m6-chart-m1');
+  if(cvM1&&D.m1.length){
+    if(window._m6c1){window._m6c1.destroy();}
+    const tots={};
+    AP_CAMPOS.forEach(([apId,lbl])=>{tots[lbl]=0;});
+    D.m1.forEach(r=>{ AP_CAMPOS.forEach(([apId,lbl])=>{ tots[lbl]+=(parseInt(r.cuant?.[lbl])||parseInt(r[apId])||0); }); });
+    const labels=[],values=[];
+    AP_CAMPOS.forEach(([apId,lbl])=>{ if(tots[lbl]>0){labels.push(lbl.length>20?lbl.substring(0,20)+'…':lbl);values.push(tots[lbl]);} });
+    const total=values.reduce((a,b)=>a+b,0)||1;
+    window._m6c1=new Chart(cvM1,{
+      type:'bar',
+      data:{labels,datasets:[{label:'Total',data:values,backgroundColor:'rgba(26,58,92,0.75)',borderColor:'#1a3a5c',borderWidth:1}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.raw} (${((ctx.raw/total)*100).toFixed(1)}%)`}}},
+        scales:{y:{beginAtZero:true},x:{ticks:{font:{size:8}}}}
+      }
+    });
+  }
+  const cvM4=document.getElementById('m6-chart-m4');
+  if(cvM4&&D.m4.length){
+    if(window._m6c4){window._m6c4.destroy();}
+    const progs={};
+    D.m4.forEach(r=>{ const k=r.prog||'Sin programa'; progs[k]=(progs[k]||0)+1; });
+    const total=Object.values(progs).reduce((a,b)=>a+b,0)||1;
+    window._m6c4=new Chart(cvM4,{
+      type:'doughnut',
+      data:{labels:Object.keys(progs),datasets:[{data:Object.values(progs),backgroundColor:['#1a3a5c','#c9942a','#1e5c2e','#8b1a1a','#2e4a7a','#5c3d1a'],borderWidth:2}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{font:{size:9}}},
+        tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw} (${((ctx.raw/total)*100).toFixed(1)}%)`}}}
+      }
+    });
+  }
+}
 
 document.getElementById('lp')?.addEventListener('keydown',e=>{if(e.key==='Enter')login();});
 
