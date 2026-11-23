@@ -1798,7 +1798,7 @@ tbody td{padding:8px 11px;}
      </div>
      <div id="cdoc-resumen" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;"></div>
      <div class="form-grid form-grid-3" style="margin-bottom:12px;">
-      <div class="form-field"><label>Buscar</label><input type="text" id="cdoc-q" placeholder="N°, remitente, asunto, medio, oficial…" oninput="CDOC.pintar()"></div>
+      <div class="form-field"><label>Buscar</label><input type="text" id="cdoc-q" placeholder="N°, oficio, remitente, asunto, oficial, nombre de PDF…" oninput="CDOC.pintar()"></div>
       <div class="form-field"><label>Semáforo</label>
        <select id="cdoc-fsem" onchange="CDOC.pintar()">
         <option value="">Todos</option><option value="verde">🟢 Verde</option><option value="amarillo">🟡 Amarillo</option><option value="rojo">🔴 Rojo (vencidas)</option><option value="cerrado">⚪ Cerradas</option>
@@ -1809,7 +1809,7 @@ tbody td{padding:8px 11px;}
        </select></div>
      </div>
      <div class="tabla-wrapper"><table>
-      <thead><tr><th>N°</th><th>Recepción</th><th>Remitente</th><th>Asunto</th><th>Medio</th><th>Plazo</th><th>Vence</th><th>Semáforo</th><th>Estado</th><th>Oficiales</th><th></th></tr></thead>
+      <thead><tr><th>N°</th><th>Recepción</th><th>Remitente</th><th>Oficio solicitud</th><th>Asunto</th><th>Medio</th><th>Plazo</th><th>Vence</th><th>Semáforo</th><th>Estado</th><th>Oficiales</th><th></th></tr></thead>
       <tbody id="cdoc-tbody"></tbody>
      </table></div>
     </div>
@@ -1827,6 +1827,8 @@ tbody td{padding:8px 11px;}
       <div class="form-field" id="cdoc-r-otro-wrap" style="display:none;"><label>Especifique el medio</label><input type="text" id="cdoc-r-otro" maxlength="100"></div>
       <div class="form-field field-span-2"><label>Remitente</label><input type="text" id="cdoc-r-rem" maxlength="200" placeholder="Persona, institución o dependencia que remite"></div>
       <div class="form-field" style="grid-column:1/-1;"><label>Asunto</label><textarea id="cdoc-r-asu" maxlength="1500" rows="3" placeholder="Asunto o resumen de lo solicitado"></textarea></div>
+      <div class="form-field"><label>N.° de oficio de la solicitud</label><input type="text" id="cdoc-r-oficio" maxlength="100" placeholder="Ej.: MJP-DM-123-2026 (opcional)"></div>
+      <div class="form-field field-span-2"><label>Documento(s) PDF adjunto(s)</label><input type="file" id="cdoc-r-files" accept="application/pdf,.pdf" multiple onchange="CDOC.archivosElegidos()"><small style="color:#666;">Opcional. Hasta 5 PDF, máximo 10 MB cada uno.</small><div id="cdoc-r-files-lista" style="font-size:12px;"></div></div>
       <div class="form-field"><label>Plazo (cantidad de días)</label><input type="number" id="cdoc-r-plazo" min="1" max="3650" value="10" oninput="CDOC.prevVenc()"></div>
       <div class="form-field"><label>Tipo de días</label>
        <select id="cdoc-r-tipo" onchange="CDOC.prevVenc()"><option value="habiles">Hábiles</option><option value="naturales">Naturales</option></select></div>
@@ -4269,7 +4271,7 @@ document.getElementById('lp')?.addEventListener('keydown',e=>{if(e.key==='Enter'
 if(window.CDOC) return;
 
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','setiembre','octubre','noviembre','diciembre'];
-const S={docs:[],asg:[],inf:[],fer:[],umbral:70,proxCons:1,anio:'',sel:null,resp:{},bit:null,cargando:false};
+const S={docs:[],asg:[],inf:[],adj:[],fer:[],umbral:70,proxCons:1,anio:'',sel:null,resp:{},bit:null,cargando:false};
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -4342,6 +4344,7 @@ function oficiales(){
   });
 }
 const asgActivas=id=>S.asg.filter(a=>a.doc_id===id&&a.activa==='SI');
+const adjDe=id=>S.adj.filter(a=>a.doc_id===id);
 
 /* ── Carga ── */
 async function cargar(silencioso){
@@ -4349,7 +4352,7 @@ async function cargar(silencioso){
   S.cargando=true;
   try{
     const d=await gasGet({mod:'docs',action:'listar',usuario:usr()});
-    S.docs=d.docs||[];S.asg=d.asignaciones||[];S.inf=d.informes||[];S.fer=d.feriados||[];
+    S.docs=d.docs||[];S.asg=d.asignaciones||[];S.inf=d.informes||[];S.adj=d.adjuntos||[];S.fer=d.feriados||[];
     S.umbral=(d.config&&d.config.umbral_amarillo)||70;
     S.proxCons=(d.config&&d.config.proximo_consec)||1;
     S.anio=(d.config&&d.config.anio)||'';
@@ -4386,7 +4389,8 @@ function datosTablero(){
   if(fs)l=l.filter(x=>x.c.k===fs);
   if(q)l=l.filter(x=>{
     const of=asgActivas(x.d.id).map(a=>a.nombre).join(' ');
-    return [x.d.id,x.d.remitente,x.d.asunto,medioTxt(x.d),x.d.estado,of,x.d.fecha_recepcion].join(' ').toLowerCase().includes(q);
+    const ad=adjDe(x.d.id).map(a=>a.nombre+' '+a.oficio).join(' ');
+    return [x.d.id,x.d.oficio_solicitud,ad,x.d.remitente,x.d.asunto,medioTxt(x.d),x.d.estado,of,x.d.fecha_recepcion].join(' ').toLowerCase().includes(q);
   });
   l.sort((a,b)=>{
     const ca=a.d.estado==='Cerrado',cb=b.d.estado==='Cerrado';
@@ -4406,9 +4410,10 @@ function pintar(){
   $('cdoc-tbody').innerHTML=l.length?l.map(({d,c})=>{
     const of=asgActivas(d.id).map(a=>esc(a.nombre)).join('<br>')||'<span style="color:#999">Sin asignar</span>';
     return `<tr>
-      <td><code style="font-size:11px;background:#f0f4f8;padding:1px 5px;border-radius:3px;">${esc(d.id)}</code></td>
+      <td><code style="font-size:11px;background:#f0f4f8;padding:1px 5px;border-radius:3px;">${esc(d.id)}</code>${adjDe(d.id).length?`<br><small title="PDF adjuntos">📎 ${adjDe(d.id).length}</small>`:''}</td>
       <td style="white-space:nowrap">${fechaCorta(d.fecha_recepcion)}<br><small>${esc(d.hora_recepcion)}</small></td>
       <td style="min-width:140px">${esc(d.remitente)}</td>
+      <td>${esc(d.oficio_solicitud||'—')}</td>
       <td style="min-width:200px;max-width:320px">${esc(d.asunto.length>140?d.asunto.substr(0,140)+'…':d.asunto)}</td>
       <td>${esc(medioTxt(d))}</td>
       <td style="white-space:nowrap">${esc(plazoTxt(d))}</td>
@@ -4417,7 +4422,7 @@ function pintar(){
       <td><span class="badge badge-azul">${esc(d.estado)}</span></td>
       <td style="font-size:12px">${of}</td>
       <td><button class="btn btn-primary btn-sm" onclick="CDOC.ver('${esc(d.id)}')">Abrir</button></td>
-    </tr>`;}).join(''):'<tr><td colspan="11" style="text-align:center;color:#999;padding:16px;">Sin gestiones</td></tr>';
+    </tr>`;}).join(''):'<tr><td colspan="12" style="text-align:center;color:#999;padding:16px;">Sin gestiones</td></tr>';
 }
 function chip(k,fest){
   const s=$('cdoc-fsem');
@@ -4442,21 +4447,27 @@ async function registrar(){
     fecha_recepcion:$('cdoc-r-fecha').value,hora_recepcion:$('cdoc-r-hora').value,
     remitente:$('cdoc-r-rem').value.trim(),asunto:$('cdoc-r-asu').value.trim(),
     medio:$('cdoc-r-medio').value,medio_otro:$('cdoc-r-otro').value.trim(),
-    plazo_dias:$('cdoc-r-plazo').value,tipo_dias:$('cdoc-r-tipo').value
+    plazo_dias:$('cdoc-r-plazo').value,tipo_dias:$('cdoc-r-tipo').value,
+    oficio_solicitud:$('cdoc-r-oficio').value.trim()
   };
+  const archivos=Array.from($('cdoc-r-files').files||[]);
   if(!b.fecha_recepcion||!b.hora_recepcion){tt('Indique fecha y hora de recepción','warning');return;}
   if(!b.remitente){tt('Indique el remitente','warning');return;}
   if(!b.asunto){tt('Indique el asunto','warning');return;}
   if(b.medio==='Otro'&&!b.medio_otro){tt('Especifique el medio de recepción','warning');return;}
   if(!(parseInt(b.plazo_dias,10)>=1)){tt('Indique el plazo en días','warning');return;}
+  const errA=validarArchivos(archivos,0);if(errA){tt(errA,'warning');return;}
   btn.disabled=true;
   try{
     const r=await gasPost(b);
     tt('✅ Gestión registrada: '+r.id);
-    ['cdoc-r-rem','cdoc-r-asu','cdoc-r-otro'].forEach(i=>{$(i).value='';});
+    const fallos=archivos.length?await subirArchivos(r.id,archivos,''):[];
+    ['cdoc-r-rem','cdoc-r-asu','cdoc-r-otro','cdoc-r-oficio','cdoc-r-files'].forEach(i=>{$(i).value='';});
+    $('cdoc-r-files-lista').innerHTML='';
     $('cdoc-r-fecha').value='';
     await cargar();
     ver(r.id);
+    if(fallos.length)tt('⚠️ La gestión se registró, pero no se pudo subir: '+fallos.join(' | ')+'. Puede reintentar desde "Documentos adjuntos".','danger');
   }catch(e){tt('❌ '+e.message,'danger');}
   finally{btn.disabled=false;}
 }
@@ -4484,11 +4495,13 @@ function renderDetalle(){
     <div><small>Medio</small>${esc(medioTxt(d))}</div>
     <div><small>Plazo</small>${esc(plazoTxt(d))}</div>
     <div class="full"><small>Remitente</small>${esc(d.remitente)}</div>
+    <div class="full"><small>N.° de oficio de la solicitud</small>${adm?`<span style="display:flex;gap:6px;align-items:center;"><input type="text" id="cdoc-d-oficio" maxlength="100" value="${esc(d.oficio_solicitud)}" style="padding:5px 8px;border:1.5px solid var(--gris-borde);border-radius:8px;max-width:320px;"><button class="btn btn-secondary btn-sm" onclick="CDOC.guardarOficio()">Guardar</button></span>`:esc(d.oficio_solicitud||'—')}</div>
     <div class="full"><small>Asunto</small><div class="cdoc-texto">${esc(d.asunto)}</div></div>
     <div><small>Vence</small>${fechaLarga(c.venc)}</div>
     <div><small>${cerrado?'Cierre':'Situación del plazo'}</small>${esc(c.detalle||'—')}</div>
     <div><small>Registrado por</small>${esc(d.registrado_nombre)} · ${tsCorto(d.creado_en)}</div>
    </div></div>`;
+  h+=secAdjuntos(d,adm);
   h+=secAsignacion(d,asg,infs,cerrado,adm);
   h+=secInforme(d,asg,infs,cerrado,adm,yo);
   h+=secRespuesta(d,asg,infs,cerrado,adm);
@@ -4613,6 +4626,89 @@ function pintarBit(){
   el.innerHTML=S.bit.length?`<div class="tabla-wrapper"><table><thead><tr><th>Fecha y hora</th><th>Usuario</th><th>Acción</th><th>Detalle</th></tr></thead><tbody>`+S.bit.map(b=>`<tr><td style="white-space:nowrap">${tsCorto(b.ts)}</td><td>${esc(b.usuario)}</td><td>${esc(b.accion)}</td><td>${esc(b.detalle)}</td></tr>`).join('')+'</tbody></table></div>':'<div class="alert alert-info">Sin eventos.</div>';
 }
 
+/* ── Adjuntos PDF ── */
+const MAX_PDF=10*1024*1024,MAX_ADJ=5;
+const fmtTam=b=>b>=1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round(b/1024))+' KB';
+function validarArchivos(files,yaHay){
+  if(!files.length)return '';
+  if(yaHay+files.length>MAX_ADJ)return 'Máximo '+MAX_ADJ+' PDF por gestión (ya hay '+yaHay+').';
+  for(const f of files){
+    if(!/\.pdf$/i.test(f.name))return 'Solo se aceptan archivos PDF: '+f.name;
+    if(f.size<=0)return 'El archivo está vacío: '+f.name;
+    if(f.size>MAX_PDF)return f.name+' pesa '+fmtTam(f.size)+'; el máximo es 10 MB. Comprímalo e inténtelo de nuevo.';
+  }
+  return '';
+}
+function leerBase64(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]||'');r.onerror=()=>rej(new Error('No se pudo leer '+f.name));r.readAsDataURL(f);});}
+async function subirArchivos(docId,files,oficio){
+  const fallos=[];
+  for(let i=0;i<files.length;i++){
+    tt('⏳ Subiendo PDF '+(i+1)+' de '+files.length+'…','info');
+    try{await gasPost({mod:'docs',action:'adjunto_subir',usuario:usr(),doc_id:docId,nombre:files[i].name,oficio:oficio||'',datos:await leerBase64(files[i])});}
+    catch(e){fallos.push(files[i].name+': '+e.message);}
+  }
+  return fallos;
+}
+function archivosElegidos(){
+  const fs=Array.from($('cdoc-r-files').files||[]);
+  $('cdoc-r-files-lista').innerHTML=fs.map(f=>'• '+esc(f.name)+' ('+fmtTam(f.size)+')').join('<br>');
+  const e=validarArchivos(fs,0);if(e)tt(e,'warning');
+}
+const adjIdx=i=>adjDe(S.sel)[i];
+function secAdjuntos(d,adm){
+  const ad=adjDe(d.id);
+  let h=`<div class="card"><div class="card-header"><div class="card-titulo">📎 Documentos adjuntos (PDF)</div><span class="badge badge-azul">${ad.length} de ${MAX_ADJ}</span></div>`;
+  if(!ad.length)h+='<div class="alert alert-info">Esta gestión no tiene PDF adjuntos.</div>';
+  else h+='<div class="tabla-wrapper"><table><thead><tr><th>Documento</th><th>N.° de oficio</th><th>Cargado</th><th></th></tr></thead><tbody>'+ad.map((a,i)=>`<tr>
+    <td>📄 ${esc(a.nombre)}<br><small>${fmtTam(parseInt(a.tam_bytes,10)||0)}</small></td>
+    <td>${adm?`<span style="display:flex;gap:6px;"><input type="text" id="cdoc-ao-${i}" maxlength="100" value="${esc(a.oficio)}" style="padding:4px 8px;border:1.5px solid var(--gris-borde);border-radius:8px;width:150px;"><button class="btn btn-secondary btn-sm" onclick="CDOC.guardarOficioAdj(${i})">Guardar</button></span>`:esc(a.oficio||'—')}</td>
+    <td>${esc(a.subido_nombre)}<br><small>${tsCorto(a.subido_ts)}</small></td>
+    <td style="white-space:nowrap"><button class="btn btn-primary btn-sm" onclick="CDOC.abrirAdjunto(${i})">Abrir</button> <button class="btn btn-secondary btn-sm" onclick="CDOC.abrirAdjunto(${i},true)">Descargar</button>${adm?` <button class="btn btn-danger btn-sm" onclick="CDOC.retirarAdjunto(${i})">Retirar</button>`:''}</td></tr>`).join('')+'</tbody></table></div>';
+  if(adm){
+    const cupo=MAX_ADJ-ad.length;
+    h+=cupo>0?`<div class="form-grid form-grid-3" style="margin-top:14px;"><div class="form-field field-span-2"><label>Agregar PDF</label><input type="file" id="cdoc-a-files" accept="application/pdf,.pdf" multiple><small style="color:#666;">Puede agregar hasta ${cupo} más, 10 MB cada uno.</small></div><div class="form-field"><label>N.° de oficio de este documento (opcional)</label><input type="text" id="cdoc-a-oficio" maxlength="100"></div></div><div class="btn-group"><button class="btn btn-primary btn-sm" id="cdoc-a-btn" onclick="CDOC.subirDetalle()">⬆️ Subir PDF</button></div>`
+      :'<div class="alert alert-warning" style="margin-top:12px;">Se alcanzó el máximo de 5 PDF; retire uno para agregar otro.</div>';
+  }
+  return h+'</div>';
+}
+async function subirDetalle(){
+  const fs=Array.from($('cdoc-a-files').files||[]);
+  if(!fs.length){tt('Seleccione al menos un PDF','warning');return;}
+  const err=validarArchivos(fs,adjDe(S.sel).length);if(err){tt(err,'warning');return;}
+  const btn=$('cdoc-a-btn');btn.disabled=true;
+  const fallos=await subirArchivos(S.sel,fs,($('cdoc-a-oficio').value||'').trim());
+  await cargar();renderDetalle();
+  if(fallos.length)tt('⚠️ No se pudo subir: '+fallos.join(' | '),'danger');else tt('✅ PDF cargado(s)');
+}
+async function abrirAdjunto(i,descargar){
+  const a=adjIdx(i);if(!a)return;
+  const win=descargar?null:window.open('','_blank');
+  try{
+    const r=await gasGet({mod:'docs',action:'adjunto',usuario:usr(),adj_id:a.adj_id});
+    const bin=atob(r.datos),bytes=new Uint8Array(bin.length);
+    for(let k=0;k<bin.length;k++)bytes[k]=bin.charCodeAt(k);
+    const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
+    if(win){win.location.href=url;}
+    else{const l=document.createElement('a');l.href=url;l.download=r.nombre;document.body.appendChild(l);l.click();l.remove();}
+    setTimeout(()=>URL.revokeObjectURL(url),120000);
+  }catch(e){if(win)win.close();tt('❌ '+e.message,'danger');}
+}
+async function retirarAdjunto(i){
+  const a=adjIdx(i);if(!a)return;
+  if(!confirm('¿Retirar este PDF de la gestión? Quedará registrado en la bitácora y el archivo permanece guardado en Drive.'))return;
+  try{await gasPost({mod:'docs',action:'adjunto_retirar',usuario:usr(),adj_id:a.adj_id});tt('PDF retirado');await cargar();renderDetalle();}
+  catch(e){tt('❌ '+e.message,'danger');}
+}
+async function guardarOficio(){
+  try{await gasPost({mod:'docs',action:'oficio_editar',usuario:usr(),doc_id:S.sel,oficio:$('cdoc-d-oficio').value.trim()});tt('✅ N.° de oficio guardado');await cargar();renderDetalle();}
+  catch(e){tt('❌ '+e.message,'danger');}
+}
+async function guardarOficioAdj(i){
+  const a=adjIdx(i);if(!a)return;
+  try{await gasPost({mod:'docs',action:'oficio_editar',usuario:usr(),adj_id:a.adj_id,oficio:$('cdoc-ao-'+i).value.trim()});tt('✅ N.° de oficio guardado');await cargar();renderDetalle();}
+  catch(e){tt('❌ '+e.message,'danger');}
+}
+
 /* ── Configuración (solo administrador) ── */
 function renderConfig(){
   if(!esAdmin()){$('wf-mod8-config').innerHTML='';return;}
@@ -4623,7 +4719,7 @@ function renderConfig(){
     <div class="form-field"><label>Amarillo al consumir (% del plazo)</label><input type="number" id="cdoc-c-umbral" min="1" max="99" value="${S.umbral}"></div>
     <div class="form-field"><label>Próximo consecutivo del año ${esc(S.anio)}</label><input type="number" id="cdoc-c-cons" min="1" value="${S.proxCons}"></div>
    </div>
-   <div class="alert alert-info" style="margin-top:12px;">Verde por debajo del porcentaje indicado; amarillo desde ese porcentaje hasta el último día del plazo; rojo desde el día siguiente. Formato del consecutivo: 001-INF-PML-${esc(S.anio||'2026')}; reinicia cada año.</div>
+   <div class="alert alert-info" style="margin-top:12px;">Verde por debajo del porcentaje indicado; amarillo desde ese porcentaje hasta el último día del plazo; rojo desde el día siguiente. Formato del consecutivo: 001-DOC-GSCV-${esc(S.anio||'2026')}; reinicia cada año.</div>
    <div class="btn-group"><button class="btn btn-primary btn-sm" onclick="CDOC.guardarConfig()">💾 Guardar</button></div></div>
   <div class="card"><div class="card-header"><div class="card-titulo">📅 Feriados (se excluyen de los plazos hábiles)</div></div>
    <div class="form-grid form-grid-3" style="margin-bottom:10px;">
@@ -4665,6 +4761,7 @@ function tablaDatos(d,c){
   return `<table style="width:100%;font-size:11px;border-collapse:collapse;margin-bottom:10px;table-layout:fixed;">
    <tr>${celda('Gestión',d.id)}${celda('Recepción',fechaCorta(d.fecha_recepcion)+' '+d.hora_recepcion)}${celda('Medio',medioTxt(d))}</tr>
    <tr>${celda('Remitente',d.remitente,3)}</tr>
+   <tr>${celda('N.° de oficio de la solicitud',d.oficio_solicitud||'—',3)}</tr>
    <tr>${celda('Plazo',plazoTxt(d))}${celda('Vence',fechaCorta(c.venc))}${celda('Estado',d.estado)}</tr></table>
    <h4 style="color:#1a3a5c;margin:10px 0 6px;">ASUNTO</h4>${bloque(d.asunto)}`;
 }
@@ -4683,6 +4780,7 @@ function imprimirRespuesta(){
   print2(`<div style="max-width:800px;margin:0 auto;font-size:12px;">${encabezado('RESPUESTA — '+d.id)}
    <p style="text-align:right;">Limón, ${fechaLarga(d.fecha_cierre)}</p>
    <p><strong>Para:</strong> ${esc(d.remitente)}</p>
+   ${d.oficio_solicitud?`<p><strong>Oficio de la solicitud:</strong> ${esc(d.oficio_solicitud)}</p>`:''}
    <p><strong>Referencia:</strong> gestión N.° ${esc(d.id)}, recibida el ${fechaLarga(d.fecha_recepcion)} a las ${esc(d.hora_recepcion)} mediante ${esc(medioTxt(d))}.<br><strong>Asunto:</strong> ${esc(d.asunto)}</p>
    <div style="white-space:pre-wrap;text-align:justify;line-height:1.6;margin:16px 0;word-break:break-word;">${esc(d.respuesta)}</div>
    <p>Atentamente,</p>
@@ -4692,7 +4790,9 @@ function imprimirFicha(){
   const d=S.docs.find(x=>x.id===S.sel);if(!d)return;
   const c=calc(d),asg=asgActivas(d.id),infs=S.inf.filter(i=>i.doc_id===d.id);
   const filas=asg.map(a=>{const i=infs.find(x=>x.usuario===a.usuario);return `<tr>${celda('Oficial',a.nombre)}${celda('Asignado',tsCorto(a.asignado_ts)+' por '+a.asignado_por)}${celda('Informe',!i?'Sin informe':(i.estado==='presentado'?'Presentado '+tsCorto(i.presentado_ts):'Borrador'))}</tr>`;}).join('');
-  print2(`<div style="max-width:800px;margin:0 auto;">${encabezado('FICHA DE GESTIÓN — '+d.id)}${tablaDatos(d,c)}
+  const ad=adjDe(d.id);
+  const adjH=ad.length?`<h4 style="color:#1a3a5c;margin:10px 0 6px;">DOCUMENTOS ADJUNTOS</h4>${bloque(ad.map(a=>a.nombre+(a.oficio?' (oficio '+a.oficio+')':'')).join('\n'))}`:'';
+  print2(`<div style="max-width:800px;margin:0 auto;">${encabezado('FICHA DE GESTIÓN — '+d.id)}${tablaDatos(d,c)}${adjH}
    <table style="width:100%;font-size:11px;border-collapse:collapse;margin-bottom:10px;table-layout:fixed;"><tr>${celda('Semáforo',c.txt+(c.k==='cerrado'?'':' ('+c.detalle+')'),3)}</tr>
    <tr>${celda('Registrado por',d.registrado_nombre+' · '+tsCorto(d.creado_en),3)}</tr></table>
    <h4 style="color:#1a3a5c;margin:10px 0 6px;">OFICIALES ASIGNADOS</h4>
@@ -4706,13 +4806,13 @@ function imprimirTablero(){
   const td=t=>`<td style="padding:3px;border:1px solid #ddd;font-size:9px;word-break:break-word;">${t}</td>`;
   print2(`<div style="max-width:800px;margin:0 auto;">${encabezado('CONTROL DE DOCUMENTACIÓN — LISTADO')}
    <div style="font-size:10px;margin-bottom:6px;">Emitido: ${fechaCorta(ahoraCR().fecha)} ${ahoraCR().hora} · ${l.length} gestión(es)</div>
-   <table style="width:100%;border-collapse:collapse;table-layout:fixed;"><thead><tr>${th('N°')}${th('Recepción')}${th('Remitente')}${th('Asunto')}${th('Plazo')}${th('Vence')}${th('Situación')}${th('Oficiales')}</tr></thead><tbody>`+
-   l.map(({d,c})=>`<tr>${td(esc(d.id))}${td(fechaCorta(d.fecha_recepcion))}${td(esc(d.remitente))}${td(esc(d.asunto.length>110?d.asunto.substr(0,110)+'…':d.asunto))}${td(esc(plazoTxt(d)))}${td(fechaCorta(c.venc))}${td(esc(c.txt))}${td(asgActivas(d.id).map(a=>esc(a.nombre)).join('<br>')||'—')}</tr>`).join('')+
+   <table style="width:100%;border-collapse:collapse;table-layout:fixed;"><thead><tr>${th('N°')}${th('Recepción')}${th('Remitente')}${th('Oficio')}${th('Asunto')}${th('Plazo')}${th('Vence')}${th('Situación')}${th('Oficiales')}</tr></thead><tbody>`+
+   l.map(({d,c})=>`<tr>${td(esc(d.id))}${td(fechaCorta(d.fecha_recepcion))}${td(esc(d.remitente))}${td(esc(d.oficio_solicitud||'—'))}${td(esc(d.asunto.length>110?d.asunto.substr(0,110)+'…':d.asunto))}${td(esc(plazoTxt(d)))}${td(fechaCorta(c.venc))}${td(esc(c.txt))}${td(asgActivas(d.id).map(a=>esc(a.nombre)).join('<br>')||'—')}</tr>`).join('')+
    `</tbody></table>${pie('Listado')}</div>`);
 }
 
 window.CDOC={abrir,tab,cargar,pintar,chip,ver,registrar,prevVenc,medioCambio,asignar,quitar,guardarInforme,devolver,cerrar,bitacora,respInput,
-  guardarConfig,addFeriado,delFeriado,imprimirInforme,imprimirRespuesta,imprimirFicha,imprimirTablero,
+  guardarConfig,addFeriado,delFeriado,archivosElegidos,subirDetalle,abrirAdjunto,retirarAdjunto,guardarOficio,guardarOficioAdj,imprimirInforme,imprimirRespuesta,imprimirFicha,imprimirTablero,
   _t:{vencimiento,transcurridos,calc,S}};
 })();
 </script>
